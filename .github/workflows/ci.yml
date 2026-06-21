@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    name: Static quality and sample-log validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Validate Docker Compose
+        run: docker compose config >/tmp/open5gs_lab_compose_config.txt
+
+      - name: Validate shell syntax
+        run: for f in scripts/*.sh; do bash -n "$f"; done
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy scripts tests
+
+      - name: Test
+        run: uv run pytest -v
+
+      - name: Parse sample logs
+        run: |
+          uv run python scripts/parse_attach_logs.py logs/*sample.txt -o /tmp/parsed_attach_events.csv
+          uv run python scripts/parse_attach_logs.py logs/*sample.txt -o /tmp/parsed_attach_events.json --json
+
+      - name: Validate notebook JSON
+        run: python -m json.tool notebooks/session_establishment_analysis.ipynb >/dev/null
+
+      - name: Notebook lint
+        run: uv run nbqa ruff notebooks

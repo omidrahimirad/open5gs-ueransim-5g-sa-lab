@@ -13,4 +13,3 @@ Persistent MongoDB data is kept in the named Docker volume mongodb-data.
 To remove it after exporting evidence, run:
   docker volume rm open5gs-ueransim-5g-sa-lab_mongodb-data
 MSG
-

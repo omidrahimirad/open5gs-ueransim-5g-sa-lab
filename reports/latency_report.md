@@ -36,4 +36,3 @@ Latency in this lab validates that a simulated UE received a PDU session and tha
 It is not equivalent to commercial RAN latency. UERANSIM does not model RF channel conditions, scheduler behavior, HARQ, MIMO layers, antenna patterns, real UE modem behavior, or gNB DU/CU split timing. Container scheduling, host CPU load, Docker bridge NAT, and Internet path variability may dominate measurements.
 
 For a more realistic RF/RAN setup, use SDR or commercial gNB hardware, calibrated RF cabling or chamber conditions, real USIM/eSIM credentials, controlled packet core placement, PTP/GNSS timing where required, and traffic tools such as iperf3 with controlled endpoints.
-
