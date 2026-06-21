@@ -1,0 +1,24 @@
+# UERANSIM gNB configuration.
+# N2: NGAP/SCTP from this gNB to Open5GS AMF at service name "amf".
+# N3: GTP-U user plane from this gNB toward the Open5GS UPF.
+
+mcc: "001"
+mnc: "01"
+nci: "0x000000010"
+idLength: 32
+tac: 1
+
+linkIp: gnb
+ngapIp: gnb
+gtpIp: gnb
+
+amfConfigs:
+  - address: amf
+    port: 38412
+
+slices:
+  - sst: 1
+    sd: "000001"
+
+ignoreStreamIds: true
+

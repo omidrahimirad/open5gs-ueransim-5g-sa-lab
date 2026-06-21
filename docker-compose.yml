@@ -1,0 +1,170 @@
+# 5G Standalone lab: Open5GS 5GC + UERANSIM gNB/UE.
+#
+# Linux is strongly recommended. SCTP on N2 and the UE TUN interface need kernel
+# features/privileges that Docker Desktop on macOS may not expose reliably.
+# Treat this compose file as the reproducible lab definition; run validation on
+# an Ubuntu host/VM when collecting real evidence.
+
+name: open5gs-ueransim-5g-sa-lab
+
+x-open5gs-image: &open5gs-image ${OPEN5GS_IMAGE:-gradiant/open5gs:latest}
+x-ueransim-image: &ueransim-image ${UERANSIM_IMAGE:-gradiant/ueransim:latest}
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: open5gs-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      core:
+        ipv4_address: 10.45.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  nrf:
+    image: *open5gs-image
+    container_name: open5gs-nrf
+    restart: unless-stopped
+    command: ["open5gs-nrfd", "-c", "/opt/open5gs/etc/open5gs/nrf.yaml"]
+    volumes:
+      - ./configs/open5gs/nrf.yaml:/opt/open5gs/etc/open5gs/nrf.yaml:ro
+      - ./logs:/var/log/open5gs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      core:
+        aliases: [nrf]
+    ports:
+      - "7777:7777/tcp"
+
+  amf:
+    image: *open5gs-image
+    container_name: open5gs-amf
+    restart: unless-stopped
+    # AMF terminates N2 NGAP over SCTP from the gNB.
+    command: ["open5gs-amfd", "-c", "/opt/open5gs/etc/open5gs/amf.yaml"]
+    volumes:
+      - ./configs/open5gs/amf.yaml:/opt/open5gs/etc/open5gs/amf.yaml:ro
+      - ./logs:/var/log/open5gs
+    depends_on:
+      - nrf
+    networks:
+      core:
+        aliases: [amf]
+    ports:
+      - "38412:38412/sctp"
+
+  smf:
+    image: *open5gs-image
+    container_name: open5gs-smf
+    restart: unless-stopped
+    # SMF controls PDU sessions and programs UPF over N4/PFCP.
+    command: ["open5gs-smfd", "-c", "/opt/open5gs/etc/open5gs/smf.yaml"]
+    volumes:
+      - ./configs/open5gs/smf.yaml:/opt/open5gs/etc/open5gs/smf.yaml:ro
+      - ./logs:/var/log/open5gs
+    depends_on:
+      - nrf
+      - upf
+    networks:
+      core:
+        aliases: [smf]
+
+  upf:
+    image: *open5gs-image
+    container_name: open5gs-upf
+    restart: unless-stopped
+    # UPF handles N3 GTP-U from gNB and N6 traffic to the data network.
+    command: ["open5gs-upfd", "-c", "/opt/open5gs/etc/open5gs/upf.yaml"]
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    volumes:
+      - ./configs/open5gs/upf.yaml:/opt/open5gs/etc/open5gs/upf.yaml:ro
+      - ./logs:/var/log/open5gs
+    networks:
+      core:
+        aliases: [upf]
+      data:
+        aliases: [upf-n6]
+
+  gnb:
+    image: *ueransim-image
+    container_name: ueransim-gnb
+    profiles: ["ran"]
+    restart: unless-stopped
+    # gNB connects N2/SCTP to AMF and carries N3/GTP-U toward UPF.
+    command: ["nr-gnb", "-c", "/UERANSIM/config/gnb.yaml"]
+    volumes:
+      - ./configs/ueransim/gnb.yaml:/UERANSIM/config/gnb.yaml:ro
+      - ./logs:/UERANSIM/logs
+    depends_on:
+      - amf
+      - upf
+    networks:
+      core:
+        aliases: [gnb]
+    cap_add:
+      - NET_ADMIN
+
+  ue:
+    image: *ueransim-image
+    container_name: ueransim-ue
+    profiles: ["ran"]
+    restart: unless-stopped
+    # UE creates a simulated NAS session through the gNB. TUN requires privilege.
+    command: ["nr-ue", "-c", "/UERANSIM/config/ue.yaml"]
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./configs/ueransim/ue.yaml:/UERANSIM/config/ue.yaml:ro
+      - ./logs:/UERANSIM/logs
+    depends_on:
+      - gnb
+    networks:
+      core:
+        aliases: [ue]
+
+  open5gs-dbctl:
+    image: gradiant/open5gs-dbctl:latest
+    container_name: open5gs-dbctl
+    profiles: ["tools"]
+    entrypoint: ["sleep", "infinity"]
+    environment:
+      DB_URI: mongodb://mongodb/open5gs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - core
+
+networks:
+  core:
+    name: open5gs-core-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.45.0.0/24
+  data:
+    name: open5gs-data-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.46.0.0/24
+
+volumes:
+  mongodb-data:
+

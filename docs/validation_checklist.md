@@ -1,0 +1,23 @@
+# Validation Checklist
+
+- [ ] Docker Engine and Compose are installed.
+- [ ] Host is Linux or a Linux VM suitable for SCTP and TUN validation.
+- [ ] `/dev/net/tun` exists.
+- [ ] MongoDB container is healthy.
+- [ ] Open5GS NRF is running.
+- [ ] Open5GS AMF is running and listening for NGAP/SCTP.
+- [ ] Open5GS SMF is running.
+- [ ] Open5GS UPF is running with required network privileges.
+- [ ] Subscriber is provisioned in Open5GS.
+- [ ] gNB connects to AMF and NG setup succeeds.
+- [ ] UE registration succeeds.
+- [ ] Authentication and security mode complete.
+- [ ] PDU session is established for DNN `internet`.
+- [ ] UE receives an IPv4 address from `10.45.1.0/24`.
+- [ ] UE tunnel interface exists.
+- [ ] User-plane ping works.
+- [ ] Logs are collected with `scripts/collect_logs.sh`.
+- [ ] Parser output is generated.
+- [ ] Notebook is executed against parsed logs.
+- [ ] Latency and session reports are updated with real run evidence.
+

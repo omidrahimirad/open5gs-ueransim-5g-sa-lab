@@ -1,0 +1,27 @@
+# Test subscriber used by Open5GS and UERANSIM.
+# These values are lab-only examples and are not private SIM credentials.
+subscriber:
+  supi: "imsi-001010000000001"
+  imsi: "001010000000001"
+  mcc: "001"
+  mnc: "01"
+  key: "465B5CE8B199B49FAA5F0A2EE238A6BC"
+  opc: "E8ED289DEBA952E4283B54E88E6183CA"
+  amf: "8000"
+  imeisv: "3569380356438031"
+
+slice:
+  sst: 1
+  sd: "000001"
+
+session:
+  dnn: "internet"
+  ue_ipv4_pool: "10.45.1.0/24"
+  qos:
+    arp_priority_level: 8
+    qci_or_5qi: 9
+
+notes:
+  - "The IMSI, K, OPc, AMF, DNN, and S-NSSAI must match configs/ueransim/ue.yaml."
+  - "Provision the same subscriber in Open5GS MongoDB before starting the UE."
+

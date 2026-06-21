@@ -1,0 +1,29 @@
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Runtime outputs. Keep committed sample logs only.
+logs/*
+!logs/*_sample.txt
+!logs/.gitkeep
+
+# Local environment overrides
+.env
+*.local
+
+# Docker/runtime artifacts
+*.pid
+*.sock
+*.pcap
+*.pcapng
+

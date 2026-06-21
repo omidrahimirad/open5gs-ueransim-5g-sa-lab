@@ -1,0 +1,44 @@
+logger:
+  file:
+    path: /var/log/open5gs/smf.log
+  level: info
+
+global:
+  max:
+    ue: 1024
+
+smf:
+  sbi:
+    server:
+      - address: smf
+        port: 7777
+    client:
+      nrf:
+        - uri: http://nrf:7777
+  pfcp:
+    server:
+      - address: smf
+    client:
+      upf:
+        - address: upf
+  gtpc:
+    server:
+      - address: smf
+  gtpu:
+    server:
+      - address: smf
+  session:
+    - subnet: 10.45.1.0/24
+      gateway: 10.45.1.1
+      dnn: internet
+  dns:
+    - 8.8.8.8
+    - 1.1.1.1
+  mtu: 1400
+  info:
+    - s_nssai:
+        - sst: 1
+          sd: 000001
+          dnn:
+            - internet
+

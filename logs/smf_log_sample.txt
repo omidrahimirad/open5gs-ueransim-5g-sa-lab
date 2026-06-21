@@ -1,0 +1,5 @@
+SAMPLE LOG - Open5GS SMF. Not captured from this environment.
+2026-06-21T10:00:02.380Z [smf] INFO PDU session establishment request received: DNN internet, SST 1, SD 000001
+2026-06-21T10:00:02.620Z [smf] INFO PFCP session establishment with UPF accepted
+2026-06-21T10:00:02.890Z [smf] INFO PDU session establishment accept: UE IP 10.45.1.2
+

@@ -1,0 +1,7 @@
+SAMPLE LOG - UERANSIM gNB. Not captured from this environment.
+2026-06-21T10:00:00.400Z [sctp] INFO SCTP connect to AMF amf:38412
+2026-06-21T10:00:00.550Z [ngap] INFO NG Setup procedure is successful
+2026-06-21T10:00:01.120Z [ngap] INFO InitialUEMessage forwarded: Registration Request
+2026-06-21T10:00:02.500Z [ngap] INFO PDUSessionResourceSetupRequest received
+2026-06-21T10:00:02.840Z [ngap] INFO PDU Session Resource Setup Response sent
+

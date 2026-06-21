@@ -1,0 +1,25 @@
+logger:
+  file:
+    path: /var/log/open5gs/upf.log
+  level: info
+
+global:
+  max:
+    ue: 1024
+
+upf:
+  pfcp:
+    server:
+      - address: upf
+  gtpu:
+    server:
+      - address: upf
+  session:
+    - subnet: 10.45.1.0/24
+      gateway: 10.45.1.1
+      dnn: internet
+  metrics:
+    server:
+      - address: upf
+        port: 9090
+
