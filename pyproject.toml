@@ -1,0 +1,74 @@
+[project]
+name = "open5gs-ueransim-5g-sa-lab"
+version = "0.1.0"
+description = "Docker-based Open5GS and UERANSIM 5G SA lab with log parsing, notebook analysis, and honest runtime evidence workflow."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Omid Rahimi" }]
+dependencies = [
+    "jupyterlab>=4.4.0",
+    "matplotlib>=3.10.0",
+    "pandas>=2.3.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "nbqa>=1.9.0",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.0",
+    "ruff>=0.12.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    ".venv",
+    "evidence/real_run_*",
+]
+
+[tool.ruff.lint]
+select = [
+    "ARG",
+    "B",
+    "E",
+    "F",
+    "I",
+    "PL",
+    "PTH",
+    "SIM",
+    "UP",
+]
+ignore = [
+    "PLR0913",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004"]
+"notebooks/**" = ["E402"]
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+pretty = true
+files = ["scripts", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["matplotlib.*", "pandas.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
