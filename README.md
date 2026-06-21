@@ -373,6 +373,4 @@ Then use [reports/troubleshooting_notes.md](reports/troubleshooting_notes.md) fo
 
 This project is released under the [MIT License](LICENSE).
 
-## German Hiring Relevance
 
-This project is designed for telecom hiring managers looking for practical engineering evidence. It shows that the candidate can move between RAN KPIs, 5G Core procedures, lab setup, logs, Linux commands, and clear documentation. The emphasis is reproducibility and troubleshooting discipline, which maps directly to integration, validation, field support, and test-lab roles in German telecom environments.
