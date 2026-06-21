@@ -28,4 +28,3 @@ docker version > "$OUT_DIR/docker_version.txt" 2>&1 || true
 docker compose version > "$OUT_DIR/docker_compose_version.txt" 2>&1 || true
 
 printf 'Collected logs under %s\n' "$OUT_DIR"
-

@@ -99,6 +99,7 @@ Core interfaces:
 Use an Ubuntu Linux host or VM for real validation.
 
 ```bash
+uv --version
 docker version
 docker compose version
 python3 --version
@@ -127,9 +128,48 @@ python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_even
 For sample-only parser validation without starting containers:
 
 ```bash
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.json --json
+uv sync
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.json --json
 ```
+
+## Modern Development Workflow
+
+This repository uses `uv` for Python dependency management and `pyproject.toml` as the central configuration for dependencies, linting, formatting, typing, and tests.
+
+Install dependencies:
+
+```bash
+uv sync
+```
+
+Run the full local quality gate:
+
+```bash
+make check
+```
+
+Equivalent raw commands:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy scripts tests
+uv run pytest -v
+uv run pre-commit run --all-files
+docker compose config
+```
+
+Useful shortcuts:
+
+```bash
+make parse-sample
+make compose-check
+make notebook-check
+make clean
+```
+
+CI validates static project quality only: Docker Compose rendering, shell syntax, Ruff, formatting, mypy, pytest, notebook JSON, notebook linting, and sample-log parser behavior. CI does not start Open5GS/UERANSIM or claim that UE registration/PDU session establishment succeeded at runtime.
 
 ## Step-by-Step Setup
 
@@ -193,20 +233,20 @@ Collect logs:
 Parse sample logs:
 
 ```bash
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.json --json
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.json --json
 ```
 
 Parse real collected logs:
 
 ```bash
-python3 scripts/parse_attach_logs.py logs/20260621T*/amf.log logs/20260621T*/smf.log logs/20260621T*/gnb.log logs/20260621T*/ue.log -o logs/parsed_attach_events.csv
+uv run python scripts/parse_attach_logs.py logs/20260621T*/amf.log logs/20260621T*/smf.log logs/20260621T*/gnb.log logs/20260621T*/ue.log -o logs/parsed_attach_events.csv
 ```
 
 Open the notebook:
 
 ```bash
-jupyter lab notebooks/session_establishment_analysis.ipynb
+uv run jupyter lab notebooks/session_establishment_analysis.ipynb
 ```
 
 ## Example Parser Output
@@ -214,7 +254,7 @@ jupyter lab notebooks/session_establishment_analysis.ipynb
 Expected sample command:
 
 ```bash
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
 ```
 
 Expected output format:
@@ -259,6 +299,28 @@ Minimum evidence before calling the lab fully validated:
 - Parser CSV/JSON generated from real logs.
 - Updated reports with real host, version, timing, and traffic evidence.
 
+## What CI Validates vs Runtime Evidence
+
+CI validates:
+
+- `docker compose config`
+- shell syntax for `scripts/*.sh`
+- Ruff linting and formatting
+- mypy type checks for `scripts` and `tests`
+- pytest parser tests
+- parser CSV/JSON output on sample logs
+- notebook JSON validity and notebook linting
+
+Real Linux runtime evidence still requires:
+
+- Ubuntu/Linux host with SCTP and `/dev/net/tun`
+- successful container startup
+- subscriber provisioning against the actual Open5GS DB/image version
+- gNB NG setup
+- UE registration/authentication/security mode
+- PDU session establishment
+- UE tunnel and traffic evidence
+
 ## Limitations
 
 - UERANSIM simulates UE/gNB behavior; it is not RF validation.
@@ -276,7 +338,7 @@ Start with:
 ```bash
 docker compose ps
 docker compose logs -f amf smf upf gnb ue
-python3 scripts/parse_attach_logs.py logs/*sample.txt
+uv run python scripts/parse_attach_logs.py logs/*sample.txt
 ```
 
 Then use [reports/troubleshooting_notes.md](reports/troubleshooting_notes.md) for symptom-based fixes.
@@ -284,7 +346,6 @@ Then use [reports/troubleshooting_notes.md](reports/troubleshooting_notes.md) fo
 ## Future Improvements
 
 - Pin image versions after confirming tags on the execution host.
-- Add CI checks for YAML and parser tests.
 - Add optional Prometheus/Grafana only after stable metrics endpoints are confirmed.
 - Add packet-capture workflow for NGAP/GTP-U on a Linux host.
 - Add multi-UE scenarios and slice/DNN negative tests.

@@ -13,26 +13,91 @@ import csv
 import json
 import re
 import sys
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable, Sequence
-
+from typing import cast
 
 EVENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
-    ("ng_setup", re.compile(r"\b(NG[- ]?Setup|NGSetup|gNB.*(connect|accepted)|SCTP.*(connect|established|association))", re.I)),
-    ("registration_request", re.compile(r"\b(Registration request|InitialUEMessage|Initial UE Message|5GS registration)", re.I)),
-    ("authentication", re.compile(r"\b(Authentication (request|response|successful|failure|reject)|AUSF|auth[- ]?vector)", re.I)),
-    ("security_mode", re.compile(r"\b(Security mode (command|complete|reject)|Security Mode|NAS security)", re.I)),
-    ("registration_accept", re.compile(r"\b(Registration accept|Registration complete|Registration Accept|Registration Complete|registered)", re.I)),
-    ("pdu_session_request", re.compile(r"\b(PDU session establishment request|PDUSessionResourceSetupRequest|PDU Session Establishment Request|CreateSMContext)", re.I)),
-    ("pdu_session_accept", re.compile(r"\b(PDU session establishment accept|PDU Session Establishment Accept|PDU Session Establishment is successful|PDU Session Resource Setup Response|CreateSMContext.*success)", re.I)),
-    ("ue_tunnel_created", re.compile(r"\b(uesimtun\d*|TUN interface|UE IP|PDU Address|IPv4 address|allocated.*address)", re.I)),
-    ("error", re.compile(r"\b(ERROR|WARN|FAIL(?:ED|URE)?|reject(?:ed)?|denied|No response|timed out|mismatch|not found|unknown|invalid)", re.I)),
+    (
+        "ng_setup",
+        re.compile(
+            r"\b(NG[- ]?Setup|NGSetup|gNB.*(connect|accepted)|"
+            r"SCTP.*(connect|established|association))",
+            re.I,
+        ),
+    ),
+    (
+        "registration_request",
+        re.compile(
+            r"\b(Registration request|InitialUEMessage|Initial UE Message|5GS registration)",
+            re.I,
+        ),
+    ),
+    (
+        "authentication",
+        re.compile(
+            r"\b(Authentication (request|response|successful|failure|reject)|"
+            r"AUSF|auth[- ]?vector)",
+            re.I,
+        ),
+    ),
+    (
+        "security_mode",
+        re.compile(
+            r"\b(Security mode (command|complete|reject)|Security Mode|NAS security)",
+            re.I,
+        ),
+    ),
+    (
+        "registration_accept",
+        re.compile(
+            r"\b(Registration accept|Registration complete|Registration Accept|"
+            r"Registration Complete|registered)",
+            re.I,
+        ),
+    ),
+    (
+        "pdu_session_request",
+        re.compile(
+            r"\b(PDU session establishment request|PDUSessionResourceSetupRequest|"
+            r"PDU Session Establishment Request|CreateSMContext)",
+            re.I,
+        ),
+    ),
+    (
+        "pdu_session_accept",
+        re.compile(
+            r"\b(PDU session establishment accept|PDU Session Establishment Accept|"
+            r"PDU Session Establishment is successful|PDU Session Resource Setup Response|"
+            r"CreateSMContext.*success)",
+            re.I,
+        ),
+    ),
+    (
+        "ue_tunnel_created",
+        re.compile(
+            r"\b(uesimtun\d*|TUN interface|UE IP|PDU Address|IPv4 address|"
+            r"allocated.*address)",
+            re.I,
+        ),
+    ),
+    (
+        "error",
+        re.compile(
+            r"\b(ERROR|WARN|FAIL(?:ED|URE)?|reject(?:ed)?|denied|No response|"
+            r"timed out|mismatch|not found|unknown|invalid)",
+            re.I,
+        ),
+    ),
 ]
 
 TIMESTAMP_PATTERNS: Sequence[re.Pattern[str]] = [
-    re.compile(r"(?P<ts>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))"),
+    re.compile(
+        r"(?P<ts>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
+        r"(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))"
+    ),
     re.compile(r"(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)"),
     re.compile(r"\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)\]"),
     re.compile(r"(?P<ts>\d{2}/\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)"),
@@ -64,9 +129,10 @@ def parse_timestamp(line: str) -> datetime | None:
         value = match.group("ts")
         try:
             if re.match(r"\d{2}/\d{2} ", value):
-                year = datetime.now(timezone.utc).year
-                parsed = datetime.strptime(f"{year}/{value}", "%Y/%m/%d %H:%M:%S.%f" if "." in value else "%Y/%m/%d %H:%M:%S")
-                return parsed.replace(tzinfo=timezone.utc)
+                year = datetime.now(UTC).year
+                timestamp_format = "%Y/%m/%d %H:%M:%S.%f" if "." in value else "%Y/%m/%d %H:%M:%S"
+                parsed = datetime.strptime(f"{year}/{value}", timestamp_format)
+                return parsed.replace(tzinfo=UTC)
             if "T" in value:
                 value = trim_fractional_seconds(value)
             if value.endswith("Z"):
@@ -74,7 +140,7 @@ def parse_timestamp(line: str) -> datetime | None:
             if re.search(r"[+-]\d{2}:\d{2}$", value):
                 return datetime.fromisoformat(value)
             parsed = datetime.fromisoformat(value)
-            return parsed.replace(tzinfo=timezone.utc)
+            return parsed.replace(tzinfo=UTC)
         except ValueError:
             continue
     return None
@@ -88,7 +154,7 @@ def trim_fractional_seconds(value: str) -> str:
 def normalize_timestamp(ts: datetime | None) -> str:
     if ts is None:
         return ""
-    return ts.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return ts.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def infer_component(path: Path) -> str:
@@ -169,7 +235,15 @@ def write_csv(events: list[Event], output: Path) -> None:
     with output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
             handle,
-            fieldnames=["timestamp", "component", "event", "severity", "source_file", "line_number", "raw_line"],
+            fieldnames=[
+                "timestamp",
+                "component",
+                "event",
+                "severity",
+                "source_file",
+                "line_number",
+                "raw_line",
+            ],
         )
         writer.writeheader()
         for event in events:
@@ -196,12 +270,26 @@ def build_summary(events: list[Event]) -> dict[str, object]:
     missing = [name for name in required if name not in event_names]
     return {
         "event_count": len(events),
-        "unclassified_relevant_count": sum(1 for event in events if event.event == "unclassified_relevant"),
-        "error_or_warning_count": sum(1 for event in events if event.severity in {"WARN", "ERROR", "FATAL"} or event.event == "error"),
+        "unclassified_relevant_count": sum(
+            1 for event in events if event.event == "unclassified_relevant"
+        ),
+        "error_or_warning_count": sum(
+            1
+            for event in events
+            if event.severity in {"WARN", "ERROR", "FATAL"} or event.event == "error"
+        ),
         "missing_events": missing,
-        "registration_duration_ms": duration_ms(events, {"registration_request"}, {"registration_accept"}),
+        "registration_duration_ms": duration_ms(
+            events,
+            {"registration_request"},
+            {"registration_accept"},
+        ),
         "authentication_duration_ms": duration_ms(events, {"authentication"}, {"security_mode"}),
-        "pdu_session_establishment_duration_ms": duration_ms(events, {"pdu_session_request"}, {"pdu_session_accept", "ue_tunnel_created"}),
+        "pdu_session_establishment_duration_ms": duration_ms(
+            events,
+            {"pdu_session_request"},
+            {"pdu_session_accept", "ue_tunnel_created"},
+        ),
     }
 
 
@@ -210,13 +298,26 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         description=__doc__,
         epilog=(
             "Examples:\n"
-            "  python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv\n"
-            "  python3 scripts/parse_attach_logs.py logs/20260621T*/{ue,gnb,amf,smf}.log --json -o logs/parsed_attach_events.json"
+            "  python3 scripts/parse_attach_logs.py logs/*sample.txt "
+            "-o logs/parsed_attach_events.csv\n"
+            "  python3 scripts/parse_attach_logs.py logs/20260621T*/"
+            "{ue,gnb,amf,smf}.log --json -o logs/parsed_attach_events.json"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("logs", nargs="+", type=Path, help="Log files to parse, e.g. logs/*sample.txt")
-    parser.add_argument("-o", "--output", type=Path, default=Path("logs/parsed_attach_events.csv"), help="Output CSV or JSON path")
+    parser.add_argument(
+        "logs",
+        nargs="+",
+        type=Path,
+        help="Log files to parse, e.g. logs/*sample.txt",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=Path("logs/parsed_attach_events.csv"),
+        help="Output CSV or JSON path",
+    )
     parser.add_argument("--json", action="store_true", help="Write JSON instead of CSV")
     return parser.parse_args(argv)
 
@@ -243,7 +344,11 @@ def main(argv: Sequence[str]) -> int:
     for key, value in summary.items():
         print(f"{key}: {value}")
     if summary["missing_events"]:
-        print("WARNING: required events missing: " + ", ".join(summary["missing_events"]), file=sys.stderr)
+        missing_events = cast("list[str]", summary["missing_events"])
+        print(
+            "WARNING: required events missing: " + ", ".join(missing_events),
+            file=sys.stderr,
+        )
         return 2
     return 0
 

@@ -24,4 +24,3 @@ session:
 notes:
   - "The IMSI, K, OPc, AMF, DNN, and S-NSSAI must match configs/ueransim/ue.yaml."
   - "Provision the same subscriber in Open5GS MongoDB before starting the UE."
-

@@ -6,4 +6,3 @@ SAMPLE LOG - UERANSIM UE. Not captured from this environment.
 2026-06-21T10:00:02.320Z [nas] INFO PDU Session Establishment Request sent for APN internet
 2026-06-21T10:00:02.930Z [nas] INFO PDU Session Establishment Accept received
 2026-06-21T10:00:03.020Z [app] INFO TUN interface uesimtun0 created, IPv4 address 10.45.1.2
-

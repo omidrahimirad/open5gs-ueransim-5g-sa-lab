@@ -47,4 +47,3 @@ Successful attach/session is confirmed by these log events:
 | Missing TUN interface | UE registers but no `uesimtun0` is created |
 | UPF route/NAT missing | UE gets IP but ping fails |
 | Docker Desktop limitation | Works partially but fails around SCTP/TUN/user plane |
-

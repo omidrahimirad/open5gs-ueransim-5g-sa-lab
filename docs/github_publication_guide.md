@@ -51,6 +51,7 @@ Built a documented 5G Standalone lab portfolio using Open5GS, UERANSIM, Docker C
 3. Add real-run evidence workflow
 4. Strengthen troubleshooting and validation documentation
 5. Polish README for public GitHub portfolio
+6. Add uv-based Python tooling, tests, pre-commit, and CI
 ```
 
 ## Suggested Branch And Push Commands
@@ -59,8 +60,8 @@ If committing directly to `main`:
 
 ```bash
 git status -sb
-git add README.md docker-compose.yml configs scripts docs reports notebooks evidence
-git commit -m "Polish 5G SA lab portfolio documentation"
+git add .
+git commit -m "Modernize Python development workflow"
 git push origin main
 ```
 
@@ -68,9 +69,17 @@ If using a review branch:
 
 ```bash
 git checkout -b polish/github-portfolio
-git add README.md docker-compose.yml configs scripts docs reports notebooks evidence
-git commit -m "Polish 5G SA lab portfolio documentation"
+git add .
+git commit -m "Modernize Python development workflow"
 git push -u origin polish/github-portfolio
+```
+
+## Local Quality Gate Before Publication
+
+```bash
+uv sync
+make check
+uv run pre-commit run --all-files
 ```
 
 ## Do Not Claim Before Real Linux Validation
@@ -90,4 +99,3 @@ Safe wording before real evidence:
 - "Linux runtime validation pending."
 - "Designed for Ubuntu/Linux execution with SCTP and TUN support."
 - "Sample logs are included for parser demonstration only."
-

@@ -8,4 +8,3 @@ SAMPLE LOG - Open5GS AMF. Not captured from this environment.
 2026-06-21T10:00:02.000Z [amf] INFO Registration accept sent
 2026-06-21T10:00:02.140Z [amf] INFO Registration complete received
 2026-06-21T10:00:02.350Z [amf] INFO PDU session establishment request forwarded to SMF
-

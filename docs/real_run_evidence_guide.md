@@ -6,7 +6,8 @@ Use this guide when validating the lab on Ubuntu. Until this evidence exists, th
 
 - Ubuntu 22.04 or 24.04 LTS, bare metal or VM.
 - Docker Engine 22+ and Docker Compose v2.
-- Python 3.10+.
+- Python 3.11+.
+- `uv`.
 - Kernel SCTP support.
 - `/dev/net/tun` available.
 
@@ -27,6 +28,7 @@ Save these outputs:
 
 ```bash
 uname -a | tee "evidence/real_run_${RUN_ID}/outputs/uname.txt"
+uv --version | tee "evidence/real_run_${RUN_ID}/outputs/uv_version.txt"
 docker version | tee "evidence/real_run_${RUN_ID}/outputs/docker_version.txt"
 docker compose version | tee "evidence/real_run_${RUN_ID}/outputs/docker_compose_version.txt"
 ls -l /dev/net/tun | tee "evidence/real_run_${RUN_ID}/outputs/tun_device.txt"
@@ -74,12 +76,12 @@ Minimum log evidence:
 ## Parser Evidence
 
 ```bash
-python3 scripts/parse_attach_logs.py \
+uv run python scripts/parse_attach_logs.py \
   "evidence/real_run_${RUN_ID}"/logs/*/{ue,gnb,amf,smf,upf}.log \
   -o "evidence/real_run_${RUN_ID}/outputs/parsed_attach_events.csv" \
   | tee "evidence/real_run_${RUN_ID}/outputs/parser_summary.txt"
 
-python3 scripts/parse_attach_logs.py \
+uv run python scripts/parse_attach_logs.py \
   "evidence/real_run_${RUN_ID}"/logs/*/{ue,gnb,amf,smf,upf}.log \
   --json \
   -o "evidence/real_run_${RUN_ID}/outputs/parsed_attach_events.json"
@@ -115,7 +117,7 @@ Copy or generate parser output at `logs/parsed_attach_events.csv`, then open:
 
 ```bash
 cp "evidence/real_run_${RUN_ID}/outputs/parsed_attach_events.csv" logs/parsed_attach_events.csv
-jupyter lab notebooks/session_establishment_analysis.ipynb
+uv run jupyter lab notebooks/session_establishment_analysis.ipynb
 ```
 
 Update:
@@ -151,4 +153,3 @@ Do not commit:
 - Traffic test result or a documented UPF/N6 limitation.
 - Parser CSV/JSON and summary generated from real logs.
 - Updated latency/session reports with real-run date and host details.
-

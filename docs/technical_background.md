@@ -35,4 +35,3 @@ The control plane is signaling: NAS, NGAP, SBI, and PFCP. The user plane is pack
 ## Where This Lab Is Limited
 
 This lab does not model RF propagation, real scheduler behavior, commercial gNB DU/CU timing, MIMO, HARQ, field KPIs, handovers, or vendor-specific counters. It complements RAN KPI work; it does not replace RF testing or live network operations.
-

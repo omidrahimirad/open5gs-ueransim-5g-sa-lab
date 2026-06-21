@@ -1,6 +1,9 @@
 # Validation Checklist
 
 - [ ] Docker Engine and Compose are installed.
+- [ ] `uv sync` completes.
+- [ ] `make check` passes.
+- [ ] GitHub Actions CI passes for static/config/parser checks.
 - [ ] Host is Linux or a Linux VM suitable for SCTP and TUN validation.
 - [ ] `/dev/net/tun` exists.
 - [ ] MongoDB container is healthy.

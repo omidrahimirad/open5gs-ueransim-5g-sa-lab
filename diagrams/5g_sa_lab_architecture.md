@@ -23,4 +23,3 @@ Interface notes:
 - N3: gNB to UPF user plane using GTP-U.
 - N4: SMF to UPF control using PFCP.
 - N6: UPF to data network.
-
