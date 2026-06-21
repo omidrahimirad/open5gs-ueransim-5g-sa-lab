@@ -372,5 +372,3 @@ Then use [reports/troubleshooting_notes.md](reports/troubleshooting_notes.md) fo
 ## License
 
 This project is released under the [MIT License](LICENSE).
-
-
