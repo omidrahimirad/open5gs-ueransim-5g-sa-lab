@@ -20,4 +20,5 @@
 - [ ] Parser output is generated.
 - [ ] Notebook is executed against parsed logs.
 - [ ] Latency and session reports are updated with real run evidence.
-
+- [ ] Real evidence is stored under `evidence/real_run_YYYYMMDD/`.
+- [ ] README validation status is updated only after evidence exists.

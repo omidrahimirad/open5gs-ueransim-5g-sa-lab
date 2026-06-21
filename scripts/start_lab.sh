@@ -24,6 +24,10 @@ if [[ ! -c /dev/net/tun ]]; then
   log "WARNING: /dev/net/tun not found on host. UE/UPF tunnel creation may fail."
 fi
 
+if command -v ss >/dev/null 2>&1 && ss -H -ltn 2>/dev/null | awk '{print $4}' | grep -Eq '(:7777|:38412)$'; then
+  log "WARNING: TCP port 7777 or SCTP/TCP-visible port 38412 appears in use. Check for local conflicts if containers fail to bind."
+fi
+
 log "Starting MongoDB and Open5GS 5GC network functions."
 docker compose up -d mongodb nrf amf upf smf
 
@@ -36,4 +40,3 @@ echo "  ./scripts/add_subscriber.sh"
 echo
 log "Then start gNB and UE:"
 echo "  docker compose --profile ran up -d gnb ue"
-

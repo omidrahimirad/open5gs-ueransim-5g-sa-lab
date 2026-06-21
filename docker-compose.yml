@@ -39,6 +39,7 @@ services:
         condition: service_healthy
     networks:
       core:
+        ipv4_address: 10.45.0.11
         aliases: [nrf]
     ports:
       - "7777:7777/tcp"
@@ -56,6 +57,7 @@ services:
       - nrf
     networks:
       core:
+        ipv4_address: 10.45.0.20
         aliases: [amf]
     ports:
       - "38412:38412/sctp"
@@ -74,6 +76,7 @@ services:
       - upf
     networks:
       core:
+        ipv4_address: 10.45.0.21
         aliases: [smf]
 
   upf:
@@ -94,8 +97,10 @@ services:
       - ./logs:/var/log/open5gs
     networks:
       core:
+        ipv4_address: 10.45.0.30
         aliases: [upf]
       data:
+        ipv4_address: 10.46.0.30
         aliases: [upf-n6]
 
   gnb:
@@ -113,6 +118,7 @@ services:
       - upf
     networks:
       core:
+        ipv4_address: 10.45.0.40
         aliases: [gnb]
     cap_add:
       - NET_ADMIN
@@ -136,6 +142,7 @@ services:
       - gnb
     networks:
       core:
+        ipv4_address: 10.45.0.50
         aliases: [ue]
 
   open5gs-dbctl:
@@ -167,4 +174,3 @@ networks:
 
 volumes:
   mongodb-data:
-

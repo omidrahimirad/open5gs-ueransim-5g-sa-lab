@@ -20,7 +20,7 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 if ! docker compose ps ue --format '{{.State}}' 2>/dev/null | grep -qi running; then
-  log "ERROR: UERANSIM UE container is not running. Start with: docker compose --profile ran up -d ue"
+  log "ERROR: UERANSIM UE container is not running. Start with: docker compose --profile ran up -d gnb ue"
   exit 1
 fi
 
@@ -58,4 +58,3 @@ else
 fi
 
 log "Traffic test completed successfully."
-

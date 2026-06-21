@@ -53,10 +53,10 @@ python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_even
 ```
 
 For a real run, parse timestamped logs from `logs/<timestamp>/`.
+Follow `docs/real_run_evidence_guide.md` before updating reports or claiming runtime validation.
 
 ## Stop
 
 ```bash
 ./scripts/stop_lab.sh
 ```
-

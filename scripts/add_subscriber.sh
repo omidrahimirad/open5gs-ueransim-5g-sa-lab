@@ -25,16 +25,20 @@ Subscriber to provision:
 
 MSG
 
-if ! docker compose ps mongodb >/dev/null 2>&1; then
-  echo "ERROR: Run ./scripts/start_lab.sh first so MongoDB is available." >&2
+if ! command -v docker >/dev/null 2>&1; then
+  echo "ERROR: docker is required." >&2
+  exit 1
+fi
+
+if ! docker compose ps mongodb --format '{{.State}}' 2>/dev/null | grep -qi running; then
+  echo "ERROR: MongoDB is not running. Run ./scripts/start_lab.sh first." >&2
   exit 1
 fi
 
 log "Trying gradiant/open5gs-dbctl helper. This command is image/version dependent."
 set +e
 docker compose --profile tools up -d open5gs-dbctl >/dev/null 2>&1
-docker compose exec -T open5gs-dbctl open5gs-dbctl add_ue_with_slice \
-  "$IMSI" "$KEY" "$OPC" "$AMF" "$DNN" "$SST" "$SD"
+docker compose exec -T open5gs-dbctl sh -lc "command -v open5gs-dbctl >/dev/null 2>&1 && open5gs-dbctl add_ue_with_slice '$IMSI' '$KEY' '$OPC' '$AMF' '$DNN' '$SST' '$SD'"
 status=$?
 set -e
 
@@ -68,4 +72,3 @@ Then adapt the command for the installed helper version.
 MSG
 
 exit 2
-
