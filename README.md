@@ -121,8 +121,8 @@ docker compose --profile ran up -d gnb ue
 docker compose logs -f gnb ue amf smf
 ./scripts/traffic_test.sh
 ./scripts/collect_logs.sh
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.json --json
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.json --json
 ```
 
 For sample-only parser validation without starting containers:
@@ -368,6 +368,10 @@ Then use [reports/troubleshooting_notes.md](reports/troubleshooting_notes.md) fo
 - [gradiant/open5gs container image](https://hub.docker.com/r/gradiant/open5gs)
 - [gradiant/ueransim container image](https://hub.docker.com/r/gradiant/ueransim)
 - [Open5GS and UERANSIM Gradiant chart demo](https://gradiant.github.io/5g-charts/open5gs-ueransim-gnb.html)
+
+## License
+
+This project is released under the [MIT License](LICENSE).
 
 ## German Hiring Relevance
 
