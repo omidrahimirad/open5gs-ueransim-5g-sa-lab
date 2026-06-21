@@ -6,7 +6,8 @@ This guide assumes an Ubuntu host or VM. Docker Desktop on macOS can be used for
 
 - Ubuntu 22.04 or 24.04 LTS
 - Docker Engine 22+ and Docker Compose v2
-- Python 3.10+
+- Python 3.11+
+- `uv`
 - Linux SCTP support
 - `/dev/net/tun`
 - Optional: JupyterLab for notebook execution
@@ -15,10 +16,28 @@ This guide assumes an Ubuntu host or VM. Docker Desktop on macOS can be used for
 
 ```bash
 uname -a
+uv --version
 docker version
 docker compose version
 ls -l /dev/net/tun
 sudo modprobe sctp || true
+```
+
+## Development Setup
+
+```bash
+uv sync
+make check
+```
+
+Raw quality commands:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy scripts tests
+uv run pytest -v
+uv run pre-commit run --all-files
 ```
 
 ## Start Core
@@ -49,7 +68,7 @@ docker compose logs -f gnb ue amf smf
 ```bash
 ./scripts/traffic_test.sh
 ./scripts/collect_logs.sh
-python3 scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
+uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
 ```
 
 For a real run, parse timestamped logs from `logs/<timestamp>/`.

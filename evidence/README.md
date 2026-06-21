@@ -43,4 +43,3 @@ Do not commit:
 - `outputs/traffic_test_result.txt`
 - AMF, SMF, gNB, UE, and UPF logs under `logs/`
 - At least one screenshot showing container status or UE tunnel/traffic evidence
-
