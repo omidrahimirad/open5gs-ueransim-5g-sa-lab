@@ -7,18 +7,18 @@ requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "Omid Rahimi" }]
 dependencies = [
-    "jupyterlab>=4.4.0",
-    "matplotlib>=3.10.0",
+    "jupyterlab>=4.6.1",
+    "matplotlib>=3.11.1",
     "pandas>=2.3.0",
 ]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.17.0",
+    "mypy>=2.3.0",
     "nbqa>=1.9.0",
     "pre-commit>=4.2.0",
     "pytest>=8.4.0",
-    "ruff>=0.12.0",
+    "ruff>=0.15.22",
 ]
 
 [tool.uv]
