@@ -1,0 +1,19 @@
+db_uri: mongodb://mongodb/open5gs
+
+logger:
+  file:
+    path: /var/log/open5gs/pcf.log
+  level: info
+
+global:
+  max:
+    ue: 1024
+
+pcf:
+  sbi:
+    server:
+      - address: 10.45.0.25
+        port: 7777
+    client:
+      nrf:
+        - uri: http://10.45.0.11:7777

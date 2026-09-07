@@ -17,6 +17,7 @@ REQUIRED_NFS = {
     "ausf",
     "udm",
     "udr",
+    "pcf",
     "amf",
     "smf",
     "upf",
@@ -73,6 +74,7 @@ def validate_repo(repo_root: Path) -> list[Check]:
     smf = load_yaml(repo_root / "configs/open5gs/smf.yaml")
     upf = load_yaml(repo_root / "configs/open5gs/upf.yaml")
     nrf = load_yaml(repo_root / "configs/open5gs/nrf.yaml")
+    pcf = load_yaml(repo_root / "configs/open5gs/pcf.yaml")
     gnb = load_yaml(repo_root / "configs/ueransim/gnb.yaml")
     ue = load_yaml(repo_root / "configs/ueransim/ue.yaml")
     subscriber = load_yaml(repo_root / "configs/subscriber_config.yaml")
@@ -87,6 +89,7 @@ def validate_repo(repo_root: Path) -> list[Check]:
             f"services={sorted(service_names)}",
         )
     )
+    checks.extend(validate_open5gs_2_8_policy_and_slice_selection(compose, amf, smf, pcf))
 
     compose_ips = collect_static_ips(services)
     checks.append(
@@ -301,6 +304,47 @@ def validate_image_defaults(compose: dict[str, Any]) -> list[Check]:
             )
         )
     return checks
+
+
+def validate_open5gs_2_8_policy_and_slice_selection(
+    compose: dict[str, Any],
+    amf: dict[str, Any],
+    smf: dict[str, Any],
+    pcf: dict[str, Any],
+) -> list[Check]:
+    services = cast("dict[str, Any]", compose.get("services", {}))
+    pcf_ip = service_ip(compose, "pcf")
+    pcf_sbi_ip = str(list_first(nested(pcf, "pcf", "sbi", "server")).get("address"))
+    pcf_db_uri = str(pcf.get("db_uri"))
+
+    amf_slice = list_first(list_first(nested(amf, "amf", "plmn_support")).get("s_nssai"))
+    smf_info = list_first(nested(smf, "smf", "info"))
+    smf_slice = list_first(smf_info.get("s_nssai"))
+    smf_dnns = smf_slice.get("dnn", [])
+    session_dnn = list_first(nested(smf, "smf", "session")).get("dnn")
+    nssf_omitted = "nssf" not in services
+    smf_advertises_selected_slice = (
+        smf_slice.get("sst") == amf_slice.get("sst")
+        and str(smf_slice.get("sd")) == str(amf_slice.get("sd"))
+        and isinstance(smf_dnns, list)
+        and session_dnn in smf_dnns
+    )
+
+    return [
+        check(
+            "open5gs_2_8_pcf_required_mode",
+            "pcf" in services
+            and pcf_sbi_ip == pcf_ip
+            and pcf_db_uri == "mongodb://mongodb/open5gs",
+            "Open5GS 2.8.0 PCF must be present, use the Compose SBI IP, and use lab MongoDB",
+        ),
+        check(
+            "open5gs_2_8_nssf_bypass_mode",
+            nssf_omitted and smf_advertises_selected_slice,
+            "NSSF is intentionally omitted only while SMF advertises the matching "
+            "S-NSSAI/DNN to NRF",
+        ),
+    ]
 
 
 def checks_pass(checks: list[Check]) -> bool:

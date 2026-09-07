@@ -16,6 +16,7 @@ flowchart LR
       AUSF["AUSF\nauthentication"]
       UDM["UDM\nsubscriber/auth data"]
       UDR["UDR\nDB front end"]
+      PCF["PCF\nAM/SM policy control"]
       SMF["SMF\nPDU session control"]
       UPF["UPF\nN3/N6 user plane"]
       DB[("MongoDB\nOpen5GS DB")]
@@ -40,13 +41,17 @@ flowchart LR
     AUSF -- "SBI/Nnrf" --> NRF
     UDM -- "SBI/Nnrf" --> NRF
     UDR -- "SBI/Nnrf" --> NRF
+    PCF -- "SBI/Nnrf" --> NRF
     SMF -- "SBI/Nnrf" --> NRF
     AMF -- "SBI service interaction" --> AUSF
     AUSF -- "SBI service interaction" --> UDM
     UDM -- "SBI service interaction" --> UDR
+    AMF -- "AM policy" --> PCF
+    SMF -- "SM policy" --> PCF
     AMF -- "session request" --> SMF
     SMF -- "N4 PFCP UDP/8805" --> UPF
     UDR -. "subscriber data" .-> DB
+    PCF -. "policy data" .-> DB
     UPF -- "N6 data network" --> DNSRV
     RUNNER -. "starts/checks" .-> CORE
     RUNNER -. "starts/checks" .-> RAN
@@ -60,3 +65,4 @@ Interface notes:
 - N4: SMF to UPF control using PFCP.
 - N6: UPF to internal data-network test target.
 - SBI: Open5GS service-based interfaces for NF discovery and core service interaction.
+- PCF/NSSF mode: PCF is present for Open5GS 2.8.0 policy associations; NSSF is omitted because matching `smf.info` enables direct NRF-based SMF selection.

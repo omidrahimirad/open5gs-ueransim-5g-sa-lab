@@ -29,7 +29,7 @@ if command -v ss >/dev/null 2>&1 && ss -H -ltn 2>/dev/null | awk '{print $4}' | 
 fi
 
 log "Starting MongoDB, Open5GS 5GC network functions, and internal DN target."
-docker compose up -d mongodb nrf ausf udm udr amf upf smf dn-server
+docker compose up -d mongodb nrf ausf udm udr pcf amf upf smf dn-server
 
 log "Core services requested. Check health/logs with:"
 echo "  docker compose ps"

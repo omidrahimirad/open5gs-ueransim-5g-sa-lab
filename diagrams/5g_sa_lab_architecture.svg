@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1300" height="720" viewBox="0 0 1300 720" role="img" aria-labelledby="title desc">
   <title id="title">5G SA System Integration and Failure Injection Validation Lab</title>
-  <desc id="desc">UERANSIM UE and gNB connect to Open5GS NRF, AMF, AUSF, UDM, UDR, SMF, UPF, MongoDB, internal data network server, and a validation harness.</desc>
+  <desc id="desc">UERANSIM UE and gNB connect to Open5GS NRF, AMF, AUSF, UDM, UDR, PCF, SMF, UPF, MongoDB, internal data network server, and a validation harness.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#253247"/>
@@ -43,6 +43,8 @@
   <text class="text" x="636" y="286">UDM</text>
   <rect class="box core" x="760" y="250" width="130" height="62"/>
   <text class="text" x="808" y="286">UDR</text>
+  <rect class="box core" x="420" y="250" width="130" height="62"/>
+  <text class="text" x="468" y="286">PCF</text>
   <rect class="box core" x="420" y="360" width="130" height="62"/>
   <text class="text" x="468" y="396">SMF</text>
   <rect class="box core" x="590" y="360" width="130" height="62"/>
@@ -68,8 +70,12 @@
   <text class="small" x="666" y="236">auth data</text>
   <path class="line" d="M720 281 L760 281"/>
   <text class="small" x="724" y="265">SBI</text>
-  <path class="line" d="M485 212 L485 360"/>
-  <text class="small" x="498" y="306">session request</text>
+  <path class="line" d="M485 212 L485 250"/>
+  <text class="small" x="498" y="236">AM policy</text>
+  <path class="line" d="M485 360 L485 312"/>
+  <text class="small" x="498" y="340">SM policy</text>
+  <path class="line" d="M458 212 C390 265 390 340 420 391"/>
+  <text class="small" x="388" y="320">session</text>
   <path class="line" d="M550 391 L590 391"/>
   <text class="small" x="555" y="374">N4 PFCP</text>
   <path class="line" d="M890 391 L1062 396"/>

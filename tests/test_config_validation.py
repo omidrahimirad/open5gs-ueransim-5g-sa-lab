@@ -79,3 +79,25 @@ def test_invalid_subscriber_key_is_detected(tmp_path: Path) -> None:
     subscriber_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
     assert "subscriber_key_format" in failed_names(repo)
+
+
+def test_open5gs_2_8_pcf_is_required_by_static_mode_check(tmp_path: Path) -> None:
+    repo = copy_repo(tmp_path)
+    compose_path = repo / "docker-compose.yml"
+    data = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
+    del data["services"]["pcf"]
+    compose_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    failures = failed_names(repo)
+    assert "required_network_functions" in failures
+    assert "open5gs_2_8_pcf_required_mode" in failures
+
+
+def test_nssf_omission_requires_matching_smf_discovery_metadata(tmp_path: Path) -> None:
+    repo = copy_repo(tmp_path)
+    smf_path = repo / "configs/open5gs/smf.yaml"
+    data = yaml.safe_load(smf_path.read_text(encoding="utf-8"))
+    data["smf"]["info"][0]["s_nssai"][0]["dnn"] = ["wrong-dnn"]
+    smf_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    assert "open5gs_2_8_nssf_bypass_mode" in failed_names(repo)
