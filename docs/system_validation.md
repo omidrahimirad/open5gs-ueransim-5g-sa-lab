@@ -18,13 +18,15 @@ The CLI enforces this by requiring a passing baseline result before runtime faul
 uv run 5g-lab scenario run upf_unavailable --baseline-result reports/runtime/<baseline_run>/scenario_result.json
 ```
 
+The result is bound to a SHA-256 context fingerprint covering the git commit, `docker-compose.yml`, all Open5GS/UERANSIM/subscriber YAML hashes, resolved runtime image values, host OS/kernel/machine identity, and Docker Engine identity. Missing, malformed, failed, or context-mismatched baseline results block the fault scenario with a nonzero exit status.
+
 ## Expected vs Observed
 
 Scenario YAML files define expected events and forbidden events. Runtime logs and test outputs produce observed events. The assertion engine compares them without inventing missing evidence.
 
 ## Recovery Checks
 
-Component and transport faults must remove the fault, restore services, and rerun baseline assertions. A scenario is not PASS just because the injected failure appeared; cleanup and recovery also matter.
+Component and transport faults must remove the fault, verify its exact removal, and rerun baseline state assertions. Recovery requires all lab services running, gNB `is-ngap-up: true`, UE `RM-REGISTERED`, an active PDU session, `uesimtun0`, and interface-bound DN traffic. A scenario is not PASS just because the injected failure appeared or ping succeeded; cleanup, control-plane/session state, tunnel state, and traffic must all recover.
 
 ## Limitations
 

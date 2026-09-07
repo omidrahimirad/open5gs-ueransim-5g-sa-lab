@@ -36,7 +36,7 @@ devops
 
 I upgraded my Open5GS + UERANSIM 5G Standalone lab into a system-integration validation project.
 
-The repository now models a complete minimum 5GC lab architecture for one-UE validation: NRF, AMF, AUSF, UDM, UDR, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target. It includes pinned runtime versions, deterministic config checks, Linux preflight, scenario definitions, expected-vs-observed assertions, protocol-aware log parsing, scoped failure-injection hooks, and a structured evidence/reporting workflow.
+The repository now models the Open5GS 2.8.0 functions required for one-UE validation: NRF, AMF, AUSF, UDM, UDR, PCF, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target. It includes pinned runtime versions, deterministic config checks, Linux preflight, scenario definitions, expected-vs-observed assertions, protocol-aware log parsing, protocol-scoped failure-injection hooks, and a structured evidence/reporting workflow.
 
 Current status is intentionally honest: static and fixture validation are implemented; real Linux runtime evidence is still pending and will only be claimed after actual Ubuntu execution proves NG setup, registration, PDU session, UE tunnel, DN traffic, and recovery behavior.
 

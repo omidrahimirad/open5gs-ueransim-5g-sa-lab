@@ -42,6 +42,8 @@ uv run 5g-lab scenario run baseline_e2e --output-dir reports/runtime
 make collect-evidence
 ```
 
+Runtime scenario exit codes are `PASS=0`, `FAIL=1`, `BLOCKED=2`, `ERROR=3`, and `SKIPPED=4`. In particular, `make baseline-test` returns nonzero when host preflight blocks execution.
+
 6. Parse real logs and save evidence.
 
 ```bash
@@ -58,6 +60,10 @@ cp logs/traffic_test_result.txt "evidence/real_runs/${RUN_ID}/traffic_result.txt
 uv run 5g-lab scenario run upf_unavailable \
   --baseline-result reports/runtime/<baseline_run>/scenario_result.json
 ```
+
+The baseline result is valid only on the same git commit, configuration fingerprint, resolved image set, and host/runtime identity. Re-run `baseline_e2e` after any relevant change instead of reusing a stale result.
+
+After rollback, component and transport scenarios write `post_recovery_compose_ps.txt`, gNB/UE CLI state, PDU-session state, UE-tunnel state, `recovery_traffic_result.txt`, and `recovery_assertions.json`. Recovery requires all checks; ping alone is insufficient.
 
 8. Stop the lab.
 

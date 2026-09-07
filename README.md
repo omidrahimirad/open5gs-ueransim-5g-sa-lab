@@ -8,7 +8,7 @@
 
 Open5GS + UERANSIM lab for 5G SA system integration, deterministic configuration checks, protocol-aware evidence extraction, failure injection, and recovery validation.
 
-This repository is a telecom validation project, not an AI demo and not a production network claim. It models a one-UE 5G SA lab with a complete minimum 5GC architecture for registration/authentication/session validation: NRF, AMF, AUSF, UDM, UDR, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target.
+This repository is a telecom validation project, not an AI demo and not a production network claim. It models a one-UE 5G SA lab with the 5GC functions required by the selected Open5GS 2.8.0 flow: NRF, AMF, AUSF, UDM, UDR, PCF, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target.
 
 Current claim level: **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**. Sample logs prove the parser and reports; they do not prove that this host completed real UE registration or PDU session establishment.
 
@@ -34,11 +34,11 @@ Mermaid source: [diagrams/5g_sa_lab_architecture.md](diagrams/5g_sa_lab_architec
 | Area | Components | Interfaces |
 | --- | --- | --- |
 | RAN/UE simulation | UERANSIM UE, UERANSIM gNB | N1 NAS via gNB, N2 NGAP/SCTP, N3 GTP-U |
-| 5G Core control plane | NRF, AMF, AUSF, UDM, UDR, SMF | SBI, N11-style AMF/SMF service interaction |
+| 5G Core control plane | NRF, AMF, AUSF, UDM, UDR, PCF, SMF | SBI, policy control, N11-style AMF/SMF service interaction |
 | User plane | UPF, internal DN server | N4 PFCP, N6 data-network path |
 | Evidence tooling | parser, scenarios, assertions, reports | logs, optional pcap metadata, JSON/Markdown results |
 
-PCF and NSSF are not used in this V2 baseline because the current one-slice, one-DNN scenario set does not require them.
+PCF is included because Open5GS 2.8.0 invokes AM and SM policy-control services during the selected registration/session paths. NSSF is intentionally omitted: the SMF advertises this lab's exact S-NSSAI and DNN to NRF, so AMF can select it directly; the validator fails if that direct-selection contract drifts. This is a version-specific topology decision, not a general claim that NSSF is unnecessary.
 
 ## Validation Layers
 
@@ -65,7 +65,7 @@ CI intentionally covers static and fixture validation only. It does not claim re
 | `n2_impairment` | Transport | NGAP/SCTP impact observed | Interpreted after CP state | Interpreted after CP state | Remove scoped impairment and baseline | No |
 | `n3_impairment` | Transport | May remain healthy | May remain established | Degrades/fails | Remove scoped impairment and baseline | No |
 
-Fault scenarios are gated by `baseline_e2e`: a broken baseline blocks fault interpretation.
+Fault scenarios are gated by `baseline_e2e`: a broken baseline blocks fault interpretation. The baseline result is accepted only when its commit, configuration hashes, resolved image values, and host/runtime identity match the current run.
 
 ## Quick Start
 
@@ -124,13 +124,15 @@ uv run python scripts/parse_attach_logs.py logs/*sample.txt -o /tmp/parsed_attac
 Failure mechanisms are intentionally small and scoped:
 
 - Docker Compose `restart`, `stop`, and `start` for AMF, SMF, UPF, gNB, and UE only.
-- `tc netem` impairment only inside known lab containers and allowed interfaces.
+- `tc flower` egress drops only inside the gNB container: SCTP/38412 to AMF for N2, and UDP/2152 to UPF for N3.
 - Subscriber/key/DNN/S-NSSAI mutations are modeled as controlled lab faults, not arbitrary YAML execution.
 - Every runtime fault must implement apply, verify, remove, and verify-removed behavior.
 
 No scenario definition can execute arbitrary shell commands.
 
-Runtime mutation faults for subscriber key, unknown subscriber, DNN mismatch, and S-NSSAI mismatch are defined and assertion-tested, but intentionally not automated yet because they modify subscriber/config state. Component and transport fault hooks are implemented with bounded Docker/`tc` operations and baseline gating.
+Runtime mutation faults for subscriber key, unknown subscriber, DNN mismatch, and S-NSSAI mismatch are defined and assertion-tested, but intentionally not automated yet because they modify subscriber/config state. Component and transport fault hooks use bounded Docker/`tc` operations, inspect real state after apply/removal, and require full post-rollback baseline recovery.
+
+Runtime scenario exit codes are automation-safe: `PASS=0`, `FAIL=1`, `BLOCKED=2`, `ERROR=3`, and `SKIPPED=4`. A blocked Linux runtime attempt therefore cannot make `make baseline-test` appear successful.
 
 ## Evidence
 
@@ -147,6 +149,7 @@ Minimum real runtime evidence before changing this project status:
 - interface-bound DN traffic result
 - parser CSV/JSON from real logs
 - scenario JSON/Markdown result
+- baseline runtime-context fingerprint
 - recovery evidence for any claimed fault scenario
 
 ## CI vs Runtime
@@ -168,7 +171,7 @@ CI does **not** prove real UE registration, PDU session establishment, SCTP beha
 ## Skills Demonstrated
 
 - 5G SA registration, authentication, PDU session, and user-plane validation flow
-- AMF/AUSF/UDM/UDR/SMF/UPF role separation
+- AMF/AUSF/UDM/UDR/PCF/SMF/UPF role separation
 - N2 NGAP/SCTP, N3 GTP-U, N4 PFCP, N6 routing, and SBI awareness
 - Linux networking preflight and Docker Compose orchestration
 - Deterministic scenario modeling and expected-vs-observed assertions
