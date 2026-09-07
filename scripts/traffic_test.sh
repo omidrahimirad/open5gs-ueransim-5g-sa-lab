@@ -5,14 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 OUT="${OUT:-$ROOT_DIR/logs/traffic_test_result.txt}"
-TARGET="${TARGET:-8.8.8.8}"
+TARGET="${TARGET:-10.46.0.100}"
 COUNT="${COUNT:-5}"
+UE_TUNNEL="${UE_TUNNEL:-uesimtun0}"
 
 log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$OUT"; }
 
 : > "$OUT"
 log "Starting UE user-plane traffic test."
-log "Target=${TARGET}, Count=${COUNT}"
+log "Target=${TARGET}, Count=${COUNT}, UE_TUNNEL=${UE_TUNNEL}"
 
 if ! command -v docker >/dev/null 2>&1; then
   log "ERROR: docker is required."
@@ -27,7 +28,7 @@ fi
 log "Inspecting UE network interfaces."
 docker compose exec -T ue sh -lc "ip addr || true" | tee -a "$OUT"
 
-if ! docker compose exec -T ue sh -lc "ip link show | grep -E 'uesimtun|tun'"; then
+if ! docker compose exec -T ue sh -lc "ip link show '$UE_TUNNEL'"; then
   log "ERROR: UE tunnel interface not visible. Check UE registration/PDU session logs."
   exit 2
 fi
@@ -40,14 +41,14 @@ if ! docker compose exec -T ue sh -lc "command -v ping >/dev/null 2>&1"; then
   exit 3
 fi
 
-log "Running ping over UE namespace/container."
+log "Running interface-bound ping over UE tunnel."
 set +e
-docker compose exec -T ue sh -lc "ping -c '$COUNT' '$TARGET'" | tee -a "$OUT"
+docker compose exec -T ue sh -lc "ping -I '$UE_TUNNEL' -c '$COUNT' '$TARGET'" | tee -a "$OUT"
 ping_status=${PIPESTATUS[0]}
 set -e
 
 if [[ "$ping_status" -ne 0 ]]; then
-  log "ERROR: ping failed. Check UPF NAT/forwarding, UE route, and PDU session status."
+  log "USER_PLANE_FAILURE: ping failed. Check UPF NAT/forwarding, UE route, and PDU session status."
   exit 4
 fi
 
@@ -57,4 +58,4 @@ else
   log "iperf3 not installed in UE image; skipping throughput test."
 fi
 
-log "Traffic test completed successfully."
+log "USER_PLANE_SUCCESS: traffic test completed successfully."

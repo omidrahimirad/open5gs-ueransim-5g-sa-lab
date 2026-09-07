@@ -7,12 +7,12 @@
 
 name: open5gs-ueransim-5g-sa-lab
 
-x-open5gs-image: &open5gs-image ${OPEN5GS_IMAGE:-gradiant/open5gs:latest}
-x-ueransim-image: &ueransim-image ${UERANSIM_IMAGE:-gradiant/ueransim:latest}
+x-open5gs-image: &open5gs-image ${OPEN5GS_IMAGE:-gradiant/open5gs:2.8.0}
+x-ueransim-image: &ueransim-image ${UERANSIM_IMAGE:-gradiant/ueransim:3.3.0}
 
 services:
   mongodb:
-    image: mongo:7
+    image: ${MONGODB_IMAGE:-mongo:8.3.8-noble}
     container_name: open5gs-mongodb
     restart: unless-stopped
     volumes:
@@ -44,6 +44,54 @@ services:
     ports:
       - "7777:7777/tcp"
 
+  ausf:
+    image: *open5gs-image
+    container_name: open5gs-ausf
+    restart: unless-stopped
+    command: ["open5gs-ausfd", "-c", "/opt/open5gs/etc/open5gs/ausf.yaml"]
+    volumes:
+      - ./configs/open5gs/ausf.yaml:/opt/open5gs/etc/open5gs/ausf.yaml:ro
+      - ./logs:/var/log/open5gs
+    depends_on:
+      - nrf
+    networks:
+      core:
+        ipv4_address: 10.45.0.22
+        aliases: [ausf]
+
+  udm:
+    image: *open5gs-image
+    container_name: open5gs-udm
+    restart: unless-stopped
+    command: ["open5gs-udmd", "-c", "/opt/open5gs/etc/open5gs/udm.yaml"]
+    volumes:
+      - ./configs/open5gs/udm.yaml:/opt/open5gs/etc/open5gs/udm.yaml:ro
+      - ./logs:/var/log/open5gs
+    depends_on:
+      - nrf
+    networks:
+      core:
+        ipv4_address: 10.45.0.23
+        aliases: [udm]
+
+  udr:
+    image: *open5gs-image
+    container_name: open5gs-udr
+    restart: unless-stopped
+    command: ["open5gs-udrd", "-c", "/opt/open5gs/etc/open5gs/udr.yaml"]
+    volumes:
+      - ./configs/open5gs/udr.yaml:/opt/open5gs/etc/open5gs/udr.yaml:ro
+      - ./logs:/var/log/open5gs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      nrf:
+        condition: service_started
+    networks:
+      core:
+        ipv4_address: 10.45.0.24
+        aliases: [udr]
+
   amf:
     image: *open5gs-image
     container_name: open5gs-amf
@@ -55,6 +103,8 @@ services:
       - ./logs:/var/log/open5gs
     depends_on:
       - nrf
+      - ausf
+      - udm
     networks:
       core:
         ipv4_address: 10.45.0.20
@@ -73,6 +123,8 @@ services:
       - ./logs:/var/log/open5gs
     depends_on:
       - nrf
+      - udm
+      - udr
       - upf
     networks:
       core:
@@ -146,7 +198,7 @@ services:
         aliases: [ue]
 
   open5gs-dbctl:
-    image: gradiant/open5gs-dbctl:latest
+    image: ${OPEN5GS_DBCTL_IMAGE:-gradiant/open5gs-dbctl:0.10.3}
     container_name: open5gs-dbctl
     profiles: ["tools"]
     entrypoint: ["sleep", "infinity"]
@@ -157,6 +209,25 @@ services:
         condition: service_healthy
     networks:
       - core
+
+  dn-server:
+    image: ${DN_SERVER_IMAGE:-busybox:1.37.0}
+    container_name: open5gs-dn-server
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - |
+        ip route add 10.45.1.0/24 via 10.46.0.30 2>/dev/null || true
+        sleep infinity
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - upf
+    networks:
+      data:
+        ipv4_address: 10.46.0.100
+        aliases: [dn-server]
 
 networks:
   core:
