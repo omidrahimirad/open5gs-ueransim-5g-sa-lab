@@ -5,7 +5,8 @@ from pathlib import Path
 
 from pytest import CaptureFixture
 
-from fiveg_lab.cli import main
+from fiveg_lab.cli import main, runtime_exit_code
+from fiveg_lab.models import ResultStatus
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -67,3 +68,11 @@ def test_cli_generates_fixture_scenario_result(
     assert status == 0
     assert "PASS baseline_e2e" in captured.out
     assert json.loads(result_path.read_text(encoding="utf-8"))["status"] == "PASS"
+
+
+def test_runtime_exit_codes_are_unambiguous() -> None:
+    assert runtime_exit_code(ResultStatus.PASS) == 0
+    assert runtime_exit_code(ResultStatus.FAIL) == 1
+    assert runtime_exit_code(ResultStatus.BLOCKED) == 2
+    assert runtime_exit_code(ResultStatus.ERROR) == 3
+    assert runtime_exit_code(ResultStatus.SKIPPED) == 4

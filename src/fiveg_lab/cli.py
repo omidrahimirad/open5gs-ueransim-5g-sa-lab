@@ -21,6 +21,14 @@ from fiveg_lab.preflight import checks_pass as preflight_checks_pass
 from fiveg_lab.preflight import run_preflight
 from fiveg_lab.scenarios import load_scenario, load_scenarios
 
+RUNTIME_EXIT_CODES = {
+    ResultStatus.PASS: 0,
+    ResultStatus.FAIL: 1,
+    ResultStatus.BLOCKED: 2,
+    ResultStatus.ERROR: 3,
+    ResultStatus.SKIPPED: 4,
+}
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
@@ -116,14 +124,18 @@ def run_scenario_fixture_or_blocked(args: argparse.Namespace, scenarios_dir: Pat
         print(f"{result.status} {result.scenario_id}")
         print(f"JSON: {args.output_dir / result.run_id / 'scenario_result.json'}")
         print(f"Markdown: {args.output_dir / result.run_id / 'scenario_report.md'}")
-        return 0 if result.status in {ResultStatus.PASS, ResultStatus.BLOCKED} else 1
+        return runtime_exit_code(result.status)
 
     output_dir = args.output_dir / result.run_id
     json_path, markdown_path = write_result(result, output_dir)
     print(f"{result.status} {result.scenario_id}")
     print(f"JSON: {json_path}")
     print(f"Markdown: {markdown_path}")
-    return 0 if result.status in {ResultStatus.PASS, ResultStatus.BLOCKED} else 1
+    return 0 if result.status == ResultStatus.PASS else 1
+
+
+def runtime_exit_code(status: ResultStatus) -> int:
+    return RUNTIME_EXIT_CODES[status]
 
 
 def print_checks(checks: list[Check]) -> None:
