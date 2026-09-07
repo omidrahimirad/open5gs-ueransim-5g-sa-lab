@@ -63,6 +63,10 @@ def render_markdown(result: ScenarioResult) -> str:
         f"| {item.name} | {item.status} | {item.expected} | {item.observed} |"
         for item in result.assertions
     )
+    recovery_rows = "\n".join(
+        f"| {item.name} | {item.status} | {item.expected} | {item.observed} |"
+        for item in result.recovery_assertions
+    )
     evidence_rows = "\n".join(
         f"| {item.kind} | {item.claim_level} | `{item.path}` | {item.description} |"
         for item in result.evidence
@@ -79,10 +83,14 @@ Status: **{result.status}**
 ## Runtime State
 
 - Baseline ready: {result.baseline_ready}
+- Baseline context fingerprint: {result.baseline_context_fingerprint or "not recorded"}
 - Fault applied: {result.fault_applied}
+- Fault verified: {result.fault_verified}
 - Expected failure observed: {result.expected_failure_observed}
 - Recovery attempted: {result.recovery_attempted}
 - Recovery status: {result.recovery_status}
+- Rollback verified: {result.rollback_verified}
+- Recovery verified: {result.recovery_verified}
 
 ## Observed Events
 
@@ -93,6 +101,12 @@ Status: **{result.status}**
 | Assertion | Status | Expected | Observed |
 | --- | --- | --- | --- |
 {assertion_rows}
+
+## Recovery Assertions
+
+| Assertion | Status | Expected | Observed |
+| --- | --- | --- | --- |
+{recovery_rows}
 
 ## Evidence
 

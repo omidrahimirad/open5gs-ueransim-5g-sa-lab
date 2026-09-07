@@ -62,5 +62,10 @@ class ScenarioResult:
     recovery_status: ResultStatus
     observed_events: list[str]
     assertions: list[AssertionResult]
+    baseline_context_fingerprint: str | None = None
+    fault_verified: bool = False
+    rollback_verified: bool = False
+    recovery_assertions: list[AssertionResult] = field(default_factory=list)
+    recovery_verified: bool = False
     evidence: list[EvidenceRef] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)

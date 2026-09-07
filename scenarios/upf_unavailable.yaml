@@ -13,7 +13,7 @@ expected_events:
   - user_plane_failure
 forbidden_events:
   - user_plane_success
-recovery_action: Start UPF and rerun baseline traffic assertions.
-recovery_expectation: Baseline user-plane traffic must pass after UPF is restored.
+recovery_action: Start UPF and rerun baseline control-plane, session, tunnel, and traffic assertions.
+recovery_expectation: Full baseline state must pass after UPF is restored.
 timeout_seconds: 420
 runtime_validated: false
