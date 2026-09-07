@@ -1,0 +1,19 @@
+id: upf_unavailable
+title: UPF unavailable and user-plane recovery
+category: USER_PLANE
+description: Stop UPF and distinguish control-plane availability from user-plane outage.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+fault:
+  type: stop_service
+  target: upf
+expected_control_plane: Registration may remain available; PFCP/session or user-plane failure is observed.
+expected_user_plane: Interface-bound traffic through the UE tunnel fails until UPF is restored.
+expected_events:
+  - user_plane_failure
+forbidden_events:
+  - user_plane_success
+recovery_action: Start UPF and rerun baseline traffic assertions.
+recovery_expectation: Baseline user-plane traffic must pass after UPF is restored.
+timeout_seconds: 420
+runtime_validated: false

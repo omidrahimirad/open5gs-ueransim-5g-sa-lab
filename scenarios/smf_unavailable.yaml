@@ -1,0 +1,20 @@
+id: smf_unavailable
+title: SMF unavailable during session establishment
+category: SESSION_MANAGEMENT
+description: Stop SMF and verify PDU session impact and recovery after SMF restoration.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+fault:
+  type: stop_service
+  target: smf
+expected_control_plane: Registration may remain available while session management fails.
+expected_user_plane: User-plane service is unavailable without a valid PDU session.
+expected_events:
+  - pdu_session_reject
+forbidden_events:
+  - pdu_session_accept
+  - user_plane_success
+recovery_action: Start SMF and rerun baseline assertions.
+recovery_expectation: Baseline must pass after SMF is restored.
+timeout_seconds: 420
+runtime_validated: false

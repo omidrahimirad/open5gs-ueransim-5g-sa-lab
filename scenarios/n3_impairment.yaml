@@ -1,0 +1,20 @@
+id: n3_impairment
+title: N3 GTP-U impairment
+category: TRANSPORT
+description: Apply bounded impairment to the gNB container interface carrying N3 user-plane traffic.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+  - tc is available inside the target container.
+fault:
+  type: n3_impairment
+  target: gnb
+  value: eth0
+expected_control_plane: Registration/control plane may remain healthy.
+expected_user_plane: UE tunnel traffic degrades or fails while impairment is active.
+expected_events:
+  - user_plane_failure
+forbidden_events: []
+recovery_action: Remove tc qdisc from the scoped gNB container interface and rerun baseline assertions.
+recovery_expectation: Baseline user-plane traffic must pass after impairment is removed.
+timeout_seconds: 420
+runtime_validated: false

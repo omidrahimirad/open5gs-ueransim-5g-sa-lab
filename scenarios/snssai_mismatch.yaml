@@ -1,0 +1,18 @@
+id: snssai_mismatch
+title: Unsupported S-NSSAI request
+category: SESSION_MANAGEMENT
+description: Request an unsupported slice and validate actual Open5GS/UERANSIM behavior from evidence.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+fault:
+  type: snssai_mismatch
+expected_control_plane: Registration behavior is implementation-dependent and must be proven by logs.
+expected_user_plane: PDU/user-plane service for the unsupported slice is not accepted.
+expected_events:
+  - pdu_session_reject
+forbidden_events:
+  - user_plane_success
+recovery_action: Restore SST/SD to the known-good lab S-NSSAI.
+recovery_expectation: Healthy baseline can pass again after S-NSSAI consistency is restored.
+timeout_seconds: 300
+runtime_validated: false
