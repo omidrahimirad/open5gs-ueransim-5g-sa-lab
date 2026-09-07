@@ -35,8 +35,8 @@ Raw quality commands:
 ```bash
 uv run ruff check .
 uv run ruff format --check .
-uv run mypy scripts tests
-uv run pytest -v
+uv run mypy src scripts tests
+uv run pytest -m "not runtime" -v
 uv run pre-commit run --all-files
 ```
 
@@ -45,7 +45,7 @@ uv run pre-commit run --all-files
 ```bash
 ./scripts/start_lab.sh
 docker compose ps
-docker compose logs -f amf smf upf
+docker compose logs -f nrf ausf udm udr amf smf upf
 ```
 
 ## Provision Subscriber
@@ -54,7 +54,7 @@ docker compose logs -f amf smf upf
 ./scripts/add_subscriber.sh
 ```
 
-If the dbctl helper syntax differs from your image version, use the manual WebUI method printed by the script.
+The helper is pinned and uses `open5gs-dbctl add_ue_with_slice <imsi> <key> <opc> <apn> <sst> <sd>`.
 
 ## Start gNB and UE
 
@@ -73,6 +73,15 @@ uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attac
 
 For a real run, parse timestamped logs from `logs/<timestamp>/`.
 Follow `docs/real_run_evidence_guide.md` before updating reports or claiming runtime validation.
+
+Scenario tooling:
+
+```bash
+make validate-config
+make scenario-list
+make scenario-validate
+make baseline-test
+```
 
 ## Stop
 
