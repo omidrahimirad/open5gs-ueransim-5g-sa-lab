@@ -1,0 +1,18 @@
+id: amf_restart
+title: AMF restart and control-plane recovery
+category: CONTROL_PLANE
+description: Restart AMF and verify N2/session recovery behavior without inventing success criteria.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+fault:
+  type: restart_service
+  target: amf
+expected_control_plane: N2/registration impact is visible and AMF returns to service.
+expected_user_plane: User-plane behavior is recorded after control-plane recovery.
+expected_events:
+  - component_recovery
+forbidden_events: []
+recovery_action: Restart AMF through Docker Compose and rerun baseline assertions.
+recovery_expectation: Baseline must pass after AMF service recovery.
+timeout_seconds: 420
+runtime_validated: false
