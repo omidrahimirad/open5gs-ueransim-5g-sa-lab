@@ -20,6 +20,8 @@ htmlcov/
 logs/*
 !logs/*_sample.txt
 !logs/.gitkeep
+reports/runtime/
+evidence/capture_staging/
 
 # Local environment overrides
 .env
