@@ -1,0 +1,384 @@
+{
+  "schema_version": 1,
+  "attempt_type": "blocked_host_preflight",
+  "runtime_executed": false,
+  "timing_scope": "duration_seconds records command wall time only, never 5G procedure timing.",
+  "sanitization": {
+    "replacements": [
+      "repository path -> <repository>",
+      "home directory -> <home>",
+      "local hostname -> <host>",
+      "local username -> <user>"
+    ],
+    "collection": "Commands were executed with subprocess argument arrays. Captured stdout and stderr were sanitized before writing these records.",
+    "raw_runtime_logs_collected": false
+  },
+  "records": {
+    "all-profile-compose-images": {
+      "command": [
+        "docker",
+        "compose",
+        "--profile",
+        "ran",
+        "--profile",
+        "tools",
+        "config",
+        "--images"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.673498+00:00",
+      "duration_seconds": 0.297,
+      "exit_code": 0,
+      "stdout": "gradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/ueransim:3.3.0\nmongo:8.3.8-noble\nbusybox:1.37.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs-dbctl:0.10.3\ngradiant/open5gs:2.8.0\ngradiant/ueransim:3.3.0\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "commit": {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.634894+00:00",
+      "duration_seconds": 0.022,
+      "exit_code": 0,
+      "stdout": "d4227a44e68457e5e6ad510dbd9e9896728aeb8f\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "compose-config": {
+      "command": [
+        "docker",
+        "compose",
+        "config"
+      ],
+      "started_at_utc": "2026-09-08T14:39:59.659247+00:00",
+      "duration_seconds": 0.551,
+      "exit_code": 0,
+      "stdout": "name: open5gs-ueransim-5g-sa-lab\nservices:\n  amf:\n    command:\n      - open5gs-amfd\n      - -c\n      - /opt/open5gs/etc/open5gs/amf.yaml\n    container_name: open5gs-amf\n    depends_on:\n      ausf:\n        condition: service_started\n        required: true\n      nrf:\n        condition: service_started\n        required: true\n      pcf:\n        condition: service_started\n        required: true\n      udm:\n        condition: service_started\n        required: true\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - amf\n        ipv4_address: 10.45.0.20\n    ports:\n      - mode: ingress\n        target: 38412\n        published: \"38412\"\n        protocol: sctp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/amf.yaml\n        target: /opt/open5gs/etc/open5gs/amf.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\n  ausf:\n    command:\n      - open5gs-ausfd\n      - -c\n      - /opt/open5gs/etc/open5gs/ausf.yaml\n    container_name: open5gs-ausf\n    depends_on:\n      nrf:\n        condition: service_started\n        required: true\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - ausf\n        ipv4_address: 10.45.0.22\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/ausf.yaml\n        target: /opt/open5gs/etc/open5gs/ausf.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\n  dn-server:\n    cap_add:\n      - NET_ADMIN\n    command:\n      - sh\n      - -c\n      - |\n        ip route add 10.45.1.0/24 via 10.46.0.30 2>/dev/null || true\n        sleep infinity\n    container_name: open5gs-dn-server\n    depends_on:\n      upf:\n        condition: service_started\n        required: true\n    image: busybox:1.37.0\n    networks:\n      data:\n        aliases:\n          - dn-server\n        ipv4_address: 10.46.0.100\n    restart: unless-stopped\n  mongodb:\n    container_name: open5gs-mongodb\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - 'mongosh --quiet --eval ''db.runCommand({ ping: 1 }).ok'' || exit 1'\n      timeout: 5s\n      interval: 10s\n      retries: 12\n    image: mongo:8.3.8-noble\n    networks:\n      core:\n        ipv4_address: 10.45.0.10\n    restart: unless-stopped\n    volumes:\n      - type: volume\n        source: mongodb-data\n        target: /data/db\n        volume: {}\n  nrf:\n    command:\n      - open5gs-nrfd\n      - -c\n      - /opt/open5gs/etc/open5gs/nrf.yaml\n    container_name: open5gs-nrf\n    depends_on:\n      mongodb:\n        condition: service_healthy\n        required: true\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - nrf\n        ipv4_address: 10.45.0.11\n    ports:\n      - mode: ingress\n        target: 7777\n        published: \"7777\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/nrf.yaml\n        target: /opt/open5gs/etc/open5gs/nrf.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\n  pcf:\n    command:\n      - open5gs-pcfd\n      - -c\n      - /opt/open5gs/etc/open5gs/pcf.yaml\n    container_name: open5gs-pcf\n    depends_on:\n      mongodb:\n        condition: service_healthy\n        required: true\n      nrf:\n        condition: service_started\n        required: true\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - pcf\n        ipv4_address: 10.45.0.25\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/pcf.yaml\n        target: /opt/open5gs/etc/open5gs/pcf.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\n  smf:\n    command:\n      - open5gs-smfd\n      - -c\n      - /opt/open5gs/etc/open5gs/smf.yaml\n    container_name: open5gs-smf\n    depends_on:\n      nrf:\n        condition: service_started\n        required: true\n      pcf:\n        condition: service_started\n        required: true\n      udm:\n        condition: service_started\n        required: true\n      udr:\n        condition: service_started\n        required: true\n      upf:\n        condition: service_started\n        required: true\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - smf\n        ipv4_address: 10.45.0.21\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/smf.yaml\n        target: /opt/open5gs/etc/open5gs/smf.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\n  udm:\n    command:\n      - open5gs-udmd\n      - -c\n      - /opt/open5gs/etc/open5gs/udm.yaml\n    container_name: open5gs-udm\n    depends_on:\n      nrf:\n        condition: service_started\n        required: true\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - udm\n        ipv4_address: 10.45.0.23\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/udm.yaml\n        target: /opt/open5gs/etc/open5gs/udm.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\n  udr:\n    command:\n      - open5gs-udrd\n      - -c\n      - /opt/open5gs/etc/open5gs/udr.yaml\n    container_name: open5gs-udr\n    depends_on:\n      mongodb:\n        condition: service_healthy\n        required: true\n      nrf:\n        condition: service_started\n        required: true\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - udr\n        ipv4_address: 10.45.0.24\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/udr.yaml\n        target: /opt/open5gs/etc/open5gs/udr.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\n  upf:\n    cap_add:\n      - NET_ADMIN\n    command:\n      - open5gs-upfd\n      - -c\n      - /opt/open5gs/etc/open5gs/upf.yaml\n    container_name: open5gs-upf\n    devices:\n      - source: /dev/net/tun\n        target: /dev/net/tun\n        permissions: rwm\n    image: gradiant/open5gs:2.8.0\n    networks:\n      core:\n        aliases:\n          - upf\n        ipv4_address: 10.45.0.30\n      data:\n        aliases:\n          - upf-n6\n        ipv4_address: 10.46.0.30\n    privileged: true\n    restart: unless-stopped\n    sysctls:\n      net.ipv4.ip_forward: \"1\"\n    volumes:\n      - type: bind\n        source: <repository>/configs/open5gs/upf.yaml\n        target: /opt/open5gs/etc/open5gs/upf.yaml\n        read_only: true\n        bind: {}\n      - type: bind\n        source: <repository>/logs\n        target: /var/log/open5gs\n        bind: {}\nnetworks:\n  core:\n    name: open5gs-core-net\n    driver: bridge\n    ipam:\n      config:\n        - subnet: 10.45.0.0/24\n  data:\n    name: open5gs-data-net\n    driver: bridge\n    ipam:\n      config:\n        - subnet: 10.46.0.0/24\nvolumes:\n  mongodb-data:\n    name: open5gs-ueransim-5g-sa-lab_mongodb-data\nx-open5gs-image: gradiant/open5gs:2.8.0\nx-ueransim-image: gradiant/ueransim:3.3.0\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    },
+    "compose-images": {
+      "command": [
+        "docker",
+        "compose",
+        "config",
+        "--images"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.635164+00:00",
+      "duration_seconds": 0.283,
+      "exit_code": 0,
+      "stdout": "gradiant/open5gs:2.8.0\nbusybox:1.37.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\nmongo:8.3.8-noble\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\ngradiant/open5gs:2.8.0\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "compose-version": {
+      "command": [
+        "docker",
+        "compose",
+        "version"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.442095+00:00",
+      "duration_seconds": 0.263,
+      "exit_code": 0,
+      "stdout": "Docker Compose version v5.1.4\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "docker-os": {
+      "command": [
+        "docker",
+        "info",
+        "--format",
+        "{{.OperatingSystem}}"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.698950+00:00",
+      "duration_seconds": 2.212,
+      "exit_code": 1,
+      "stdout": "\n",
+      "stderr": "failed to connect to the docker API at unix://<home>/.docker/run/docker.sock; check if the path is correct and if the daemon is running: dial unix <home>/.docker/run/docker.sock: connect: no such file or directory\n",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "docker-version": {
+      "command": [
+        "docker",
+        "version"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.450645+00:00",
+      "duration_seconds": 0.207,
+      "exit_code": 1,
+      "stdout": "Client:\n Version:           29.4.3\n API version:       1.54\n Go version:        go1.26.2\n Git commit:        055a478\n Built:             Wed May  6 17:06:34 2026\n OS/Arch:           darwin/arm64\n Context:           desktop-linux\n",
+      "stderr": "failed to connect to the docker API at unix://<home>/.docker/run/docker.sock; check if the path is correct and if the daemon is running: dial unix <home>/.docker/run/docker.sock: connect: no such file or directory\n",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "started_at_utc": "2026-09-08T14:39:59.501510+00:00",
+      "duration_seconds": 0.427,
+      "exit_code": 0,
+      "stdout": "28 files already formatted\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    },
+    "ip-forward": {
+      "command": [
+        "sysctl",
+        "net.ipv4.ip_forward"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.626507+00:00",
+      "duration_seconds": 0.005,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "sysctl: unknown oid 'net.ipv4.ip_forward'\n",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "macos-version": {
+      "command": [
+        "sw_vers"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.446379+00:00",
+      "duration_seconds": 0.018,
+      "exit_code": 0,
+      "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A5425a\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "make-check": {
+      "command": [
+        "make",
+        "check"
+      ],
+      "started_at_utc": "2026-09-08T14:40:39.539248+00:00",
+      "duration_seconds": 2.846,
+      "exit_code": 0,
+      "stdout": "docker compose config >/tmp/open5gs_lab_compose_config.txt\nuv run 5g-lab validate-config\nPASS\trequired_network_functions\tservices=['amf', 'ausf', 'dn-server', 'gnb', 'mongodb', 'nrf', 'open5gs-dbctl', 'pcf', 'smf', 'udm', 'udr', 'ue', 'upf']\nPASS\topen5gs_2_8_pcf_required_mode\tOpen5GS 2.8.0 PCF must be present, use the Compose SBI IP, and use lab MongoDB\nPASS\topen5gs_2_8_nssf_bypass_mode\tNSSF is intentionally omitted only while SMF advertises the matching S-NSSAI/DNN to NRF\nPASS\tunique_static_container_ips\t['10.45.0.10', '10.45.0.11', '10.45.0.22', '10.45.0.23', '10.45.0.24', '10.45.0.25', '10.45.0.20', '10.45.0.21', '10.45.0.30', '10.46.0.30', '10.45.0.40', '10.45.0.50', '10.46.0.100']\nPASS\tvalid_ip_addresses\tall static IP addresses parse\nPASS\tmcc_consistent\tMCC must match NRF, AMF, gNB, UE, and subscriber\nPASS\tmnc_consistent\tMNC must match NRF, AMF, gNB, UE, and subscriber\nPASS\ttac_consistent\tAMF TAI TAC must match gNB TAC\nPASS\tamf_ngap_ip_matches_compose\t10.45.0.20\nPASS\tgnb_points_to_amf_ngap\t10.45.0.20\nPASS\tgnb_ngap_ip_matches_compose\t10.45.0.40\nPASS\tgnb_gtp_ip_matches_compose\t10.45.0.40\nPASS\tdnn_consistent\tDNN/APN must match SMF, UPF, subscriber, and UE\nPASS\tue_ipv4_pool_consistent\tSMF/UPF/subscriber UE pool must match\nPASS\tsmf_upf_pfcp_ip_consistent\tSMF N4 client must target UPF PFCP IP\nPASS\tsst_consistent\tSST must match AMF, gNB, UE, and subscriber\nPASS\tsd_consistent\tSD must match AMF, gNB, UE, and subscriber\nPASS\tsupi_format\timsi-001010000000001\nPASS\tsupi_matches_subscriber\tUE SUPI must match subscriber\nPASS\tsubscriber_key_format\tsubscriber K must be 16-byte hex\nPASS\tue_key_matches_subscriber\tUE K must match subscriber\nPASS\tue_opc_matches_subscriber\tUE OPc must match subscriber\nPASS\tue_amf_matches_subscriber\tUE AMF auth field must match subscriber\nPASS\tcritical_images_not_latest\tfloating=[]\nWARN\timage_overrides_supported\tImages can be overridden by environment variables; defaults remain pinned.\nuv run 5g-lab scenario validate\nPASS amf_restart: AMF restart and control-plane recovery\nPASS baseline_e2e: Healthy registration, PDU session, and DN traffic\nPASS dnn_mismatch: Unsupported DNN request\nPASS invalid_subscriber_key: Authentication failure from mismatched subscriber key\nPASS n2_impairment: N2 SCTP/NGAP impairment\nPASS n3_impairment: N3 GTP-U impairment\nPASS smf_unavailable: SMF unavailable during session establishment\nPASS snssai_mismatch: Unsupported S-NSSAI request\nPASS unknown_subscriber: Unknown SUPI absent from subscriber database\nPASS upf_unavailable: UPF unavailable and user-plane recovery\nuv run ruff check .\nAll checks passed!\nuv run mypy src scripts tests\nSuccess: no issues found in 27 source files\nuv run pytest -m \"not runtime\" -v\n============================= test session starts ==============================\nplatform darwin -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- <repository>/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: <repository>\nconfigfile: pyproject.toml\ntestpaths: tests\nplugins: anyio-4.14.0, cov-7.1.0\ncollecting ... collected 63 items / 1 deselected / 62 selected\n\ntests/test_assertions.py::test_expected_event_observed_passes PASSED     [  1%]\ntests/test_assertions.py::test_expected_event_missing_fails PASSED       [  3%]\ntests/test_assertions.py::test_forbidden_event_observed_fails PASSED     [  4%]\ntests/test_cli.py::test_cli_lists_scenarios PASSED                       [  6%]\ntests/test_cli.py::test_cli_validates_config PASSED                      [  8%]\ntests/test_cli.py::test_cli_generates_fixture_scenario_result PASSED     [  9%]\ntests/test_cli.py::test_runtime_exit_codes_are_unambiguous PASSED        [ 11%]\ntests/test_config_validation.py::test_current_repository_configuration_passes_static_validation PASSED [ 12%]\ntests/test_config_validation.py::test_plmn_mismatch_is_detected PASSED   [ 14%]\ntests/test_config_validation.py::test_tac_mismatch_is_detected PASSED    [ 16%]\ntests/test_config_validation.py::test_dnn_mismatch_is_detected PASSED    [ 17%]\ntests/test_config_validation.py::test_duplicate_ip_is_detected PASSED    [ 19%]\ntests/test_config_validation.py::test_invalid_subscriber_key_is_detected PASSED [ 20%]\ntests/test_config_validation.py::test_open5gs_2_8_pcf_is_required_by_static_mode_check PASSED [ 22%]\ntests/test_config_validation.py::test_nssf_omission_requires_matching_smf_discovery_metadata PASSED [ 24%]\ntests/test_evidence_reporting.py::test_scenario_result_writes_json_and_markdown PASSED [ 25%]\ntests/test_fault_injection.py::test_stop_service_generates_apply_and_rollback_commands PASSED [ 27%]\ntests/test_fault_injection.py::test_wrong_service_target_is_rejected PASSED [ 29%]\ntests/test_fault_injection.py::test_arbitrary_interface_is_rejected PASSED [ 30%]\ntests/test_fault_injection.py::test_n2_and_n3_filters_are_protocol_scoped_and_distinct PASSED [ 32%]\ntests/test_fault_injection.py::test_impairment_rollback_deletes_only_exact_filter PASSED [ 33%]\ntests/test_fault_injection.py::test_stop_service_verification_reads_docker_state PASSED [ 35%]\ntests/test_fault_injection.py::test_restart_verification_requires_new_running_instance_start_time PASSED [ 37%]\ntests/test_fault_injection.py::test_impairment_verification_checks_installed_and_removed_rule PASSED [ 38%]\ntests/test_fault_injection.py::test_cleanup_runs_after_scenario_exception PASSED [ 40%]\ntests/test_fault_injection.py::test_cleanup_reports_scenario_and_rollback_failures PASSED [ 41%]\ntests/test_orchestration.py::test_matching_baseline_context_is_accepted PASSED [ 43%]\ntests/test_orchestration.py::test_stale_baseline_context_is_rejected[git_commit] PASSED [ 45%]\ntests/test_orchestration.py::test_stale_baseline_context_is_rejected[config_sha256] PASSED [ 46%]\ntests/test_orchestration.py::test_stale_baseline_context_is_rejected[runtime_images] PASSED [ 48%]\ntests/test_orchestration.py::test_malformed_baseline_result_is_rejected PASSED [ 50%]\ntests/test_orchestration.py::test_baseline_gate_rejects_missing_or_failed PASSED [ 51%]\ntests/test_orchestration.py::test_latest_log_dir_selects_newest_timestamp PASSED [ 53%]\ntests/test_orchestration.py::test_command_notes_include_failed_commands PASSED [ 54%]\ntests/test_orchestration.py::test_version_manifest_records_pinned_defaults PASSED [ 56%]\ntests/test_orchestration.py::test_runtime_scenario_returns_blocked_result PASSED [ 58%]\ntests/test_orchestration.py::test_ping_success_alone_is_not_sufficient_for_recovery PASSED [ 59%]\ntests/test_orchestration.py::test_full_recovery_state_passes PASSED      [ 61%]\ntests/test_orchestration.py::test_failed_fault_verification_prevents_pass PASSED [ 62%]\ntests/test_orchestration.py::test_recovery_failure_forces_overall_scenario_failure PASSED [ 64%]\ntests/test_orchestration.py::test_rollback_command_failure_is_reported_and_prevents_pass PASSED [ 66%]\ntests/test_parse_attach_logs.py::test_parser_extracts_registration_events_from_sample_logs PASSED [ 67%]\ntests/test_parse_attach_logs.py::test_parser_extracts_authentication_events PASSED [ 69%]\ntests/test_parse_attach_logs.py::test_parser_extracts_pdu_session_events PASSED [ 70%]\ntests/test_parse_attach_logs.py::test_parser_handles_noisy_unmatched_lines_without_crashing PASSED [ 72%]\ntests/test_parse_attach_logs.py::test_parser_calculates_durations_correctly PASSED [ 74%]\ntests/test_parse_attach_logs.py::test_parser_reports_missing_events_for_incomplete_logs PASSED [ 75%]\ntests/test_parse_attach_logs.py::test_csv_output_has_expected_columns PASSED [ 77%]\ntests/test_parse_attach_logs.py::test_json_output_is_valid PASSED        [ 79%]\ntests/test_parse_attach_logs.py::test_cli_returns_success_on_sample_logs PASSED [ 80%]\ntests/test_parser_protocol_events.py::test_parser_detects_negative_control_plane_events PASSED [ 82%]\ntests/test_parser_protocol_events.py::test_parser_detects_pfcp_and_user_plane_events PASSED [ 83%]\ntests/test_pcap.py::test_tshark_metadata_extraction_is_optional PASSED   [ 85%]\ntests/test_preflight.py::test_optional_missing_command_is_warn PASSED    [ 87%]\ntests/test_preflight.py::test_required_missing_command_is_fail PASSED    [ 88%]\ntests/test_preflight.py::test_sctp_check_fails_closed_on_non_linux PASSED [ 90%]\ntests/test_scenarios.py::test_all_repository_scenarios_are_valid PASSED  [ 91%]\ntests/test_scenarios.py::test_missing_id_is_rejected PASSED              [ 93%]\ntests/test_scenarios.py::test_invalid_fault_type_is_rejected PASSED      [ 95%]\ntests/test_scenarios.py::test_unknown_expected_event_is_rejected PASSED  [ 96%]\ntests/test_scenarios.py::test_arbitrary_command_key_is_rejected PASSED   [ 98%]\ntests/test_scenarios.py::test_invalid_timeout_is_rejected PASSED         [100%]\n\n======================= 62 passed, 1 deselected in 0.72s =======================\nuv run python scripts/parse_attach_logs.py logs/*sample.txt -o /tmp/parsed_attach_events.csv\nParsed 29 events -> /tmp/parsed_attach_events.csv\nevent_count: 29\nunclassified_relevant_count: 4\nerror_or_warning_count: 0\nmissing_events: []\nregistration_duration_ms: 1020.0\nauthentication_duration_ms: 320.0\npdu_session_establishment_duration_ms: 520.0\nuv run python scripts/parse_attach_logs.py logs/*sample.txt -o /tmp/parsed_attach_events.json --json\nParsed 29 events -> /tmp/parsed_attach_events.json\nevent_count: 29\nunclassified_relevant_count: 4\nerror_or_warning_count: 0\nmissing_events: []\nregistration_duration_ms: 1020.0\nauthentication_duration_ms: 320.0\npdu_session_establishment_duration_ms: 520.0\npython3 -m json.tool notebooks/session_establishment_analysis.ipynb >/dev/null\nuv run nbqa ruff notebooks\nAll checks passed!\nfor f in scripts/*.sh; do bash -n \"$f\"; done\nuv run ruff format --check .\n28 files already formatted\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false,
+      "interpretation": "Parser events and timing values in this command output come only from committed sample logs; they are not runtime measurements."
+    },
+    "mypy": {
+      "command": [
+        "uv",
+        "run",
+        "mypy",
+        "src",
+        "scripts",
+        "tests"
+      ],
+      "started_at_utc": "2026-09-08T14:39:59.502801+00:00",
+      "duration_seconds": 3.322,
+      "exit_code": 0,
+      "stdout": "Success: no issues found in 27 source files\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    },
+    "os-release": {
+      "command": [
+        "cat",
+        "/etc/os-release"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.448459+00:00",
+      "duration_seconds": 0.004,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "cat: /etc/os-release: No such file or directory\n",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "pre-commit": {
+      "command": [
+        "uv",
+        "run",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "started_at_utc": "2026-09-08T14:40:10.454859+00:00",
+      "duration_seconds": 2.159,
+      "exit_code": 0,
+      "stdout": "trim trailing whitespace.................................................Passed\nfix end of files.........................................................Passed\ncheck yaml...............................................................Passed\ncheck json...............................................................Passed\ncheck toml...............................................................Passed\ncheck for added large files..............................................Passed\nruff check...............................................................Passed\nruff format..............................................................Passed\nnbqa ruff notebooks......................................................Passed\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    },
+    "preflight": {
+      "command": [
+        "make",
+        "preflight"
+      ],
+      "started_at_utc": "2026-09-08T14:39:13.837945+00:00",
+      "duration_seconds": 1.402,
+      "exit_code": 2,
+      "stdout": "./scripts/preflight.sh\nFAIL\tlinux_os\tdetected=Darwin arm64\nPASS\tdocker_installed\tdocker found\nFAIL\tiproute2_available\tip not found\nWARN\tss_available\tss not found\nWARN\ttc_available\ttc not found\nPASS\ttcpdump_available\ttcpdump found\nWARN\ttshark_available\ttshark not found\nPASS\tjq_available\tjq found\nPASS\tcurl_available\tcurl found\nPASS\tping_available\tping found\nPASS\tdocker_compose_available\tDocker Compose version v5.1.4\nFAIL\ttun_device\t/dev/net/tun missing\nFAIL\tsctp_kernel_support\tSCTP requires a Linux runtime\nWARN\tip_forwarding\tLinux sysctl unavailable on this host\nPASS\thost_port_conflicts\tno TCP conflicts detected\nPASS\tdisk_space\tfree_gib=36.9\n",
+      "stderr": "make: *** [preflight] Error 1\n",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "project-python-version": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "--version"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.506855+00:00",
+      "duration_seconds": 0.089,
+      "exit_code": 0,
+      "stdout": "Python 3.11.15\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "pytest": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-m",
+        "not runtime",
+        "-v",
+        "--cov=src/fiveg_lab",
+        "--cov=scripts",
+        "--cov-report=term-missing"
+      ],
+      "started_at_utc": "2026-09-08T14:39:59.553130+00:00",
+      "duration_seconds": 3.117,
+      "exit_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- <repository>/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: <repository>\nconfigfile: pyproject.toml\ntestpaths: tests\nplugins: anyio-4.14.0, cov-7.1.0\ncollecting ... collected 63 items / 1 deselected / 62 selected\n\ntests/test_assertions.py::test_expected_event_observed_passes PASSED     [  1%]\ntests/test_assertions.py::test_expected_event_missing_fails PASSED       [  3%]\ntests/test_assertions.py::test_forbidden_event_observed_fails PASSED     [  4%]\ntests/test_cli.py::test_cli_lists_scenarios PASSED                       [  6%]\ntests/test_cli.py::test_cli_validates_config PASSED                      [  8%]\ntests/test_cli.py::test_cli_generates_fixture_scenario_result PASSED     [  9%]\ntests/test_cli.py::test_runtime_exit_codes_are_unambiguous PASSED        [ 11%]\ntests/test_config_validation.py::test_current_repository_configuration_passes_static_validation PASSED [ 12%]\ntests/test_config_validation.py::test_plmn_mismatch_is_detected PASSED   [ 14%]\ntests/test_config_validation.py::test_tac_mismatch_is_detected PASSED    [ 16%]\ntests/test_config_validation.py::test_dnn_mismatch_is_detected PASSED    [ 17%]\ntests/test_config_validation.py::test_duplicate_ip_is_detected PASSED    [ 19%]\ntests/test_config_validation.py::test_invalid_subscriber_key_is_detected PASSED [ 20%]\ntests/test_config_validation.py::test_open5gs_2_8_pcf_is_required_by_static_mode_check PASSED [ 22%]\ntests/test_config_validation.py::test_nssf_omission_requires_matching_smf_discovery_metadata PASSED [ 24%]\ntests/test_evidence_reporting.py::test_scenario_result_writes_json_and_markdown PASSED [ 25%]\ntests/test_fault_injection.py::test_stop_service_generates_apply_and_rollback_commands PASSED [ 27%]\ntests/test_fault_injection.py::test_wrong_service_target_is_rejected PASSED [ 29%]\ntests/test_fault_injection.py::test_arbitrary_interface_is_rejected PASSED [ 30%]\ntests/test_fault_injection.py::test_n2_and_n3_filters_are_protocol_scoped_and_distinct PASSED [ 32%]\ntests/test_fault_injection.py::test_impairment_rollback_deletes_only_exact_filter PASSED [ 33%]\ntests/test_fault_injection.py::test_stop_service_verification_reads_docker_state PASSED [ 35%]\ntests/test_fault_injection.py::test_restart_verification_requires_new_running_instance_start_time PASSED [ 37%]\ntests/test_fault_injection.py::test_impairment_verification_checks_installed_and_removed_rule PASSED [ 38%]\ntests/test_fault_injection.py::test_cleanup_runs_after_scenario_exception PASSED [ 40%]\ntests/test_fault_injection.py::test_cleanup_reports_scenario_and_rollback_failures PASSED [ 41%]\ntests/test_orchestration.py::test_matching_baseline_context_is_accepted PASSED [ 43%]\ntests/test_orchestration.py::test_stale_baseline_context_is_rejected[git_commit] PASSED [ 45%]\ntests/test_orchestration.py::test_stale_baseline_context_is_rejected[config_sha256] PASSED [ 46%]\ntests/test_orchestration.py::test_stale_baseline_context_is_rejected[runtime_images] PASSED [ 48%]\ntests/test_orchestration.py::test_malformed_baseline_result_is_rejected PASSED [ 50%]\ntests/test_orchestration.py::test_baseline_gate_rejects_missing_or_failed PASSED [ 51%]\ntests/test_orchestration.py::test_latest_log_dir_selects_newest_timestamp PASSED [ 53%]\ntests/test_orchestration.py::test_command_notes_include_failed_commands PASSED [ 54%]\ntests/test_orchestration.py::test_version_manifest_records_pinned_defaults PASSED [ 56%]\ntests/test_orchestration.py::test_runtime_scenario_returns_blocked_result PASSED [ 58%]\ntests/test_orchestration.py::test_ping_success_alone_is_not_sufficient_for_recovery PASSED [ 59%]\ntests/test_orchestration.py::test_full_recovery_state_passes PASSED      [ 61%]\ntests/test_orchestration.py::test_failed_fault_verification_prevents_pass PASSED [ 62%]\ntests/test_orchestration.py::test_recovery_failure_forces_overall_scenario_failure PASSED [ 64%]\ntests/test_orchestration.py::test_rollback_command_failure_is_reported_and_prevents_pass PASSED [ 66%]\ntests/test_parse_attach_logs.py::test_parser_extracts_registration_events_from_sample_logs PASSED [ 67%]\ntests/test_parse_attach_logs.py::test_parser_extracts_authentication_events PASSED [ 69%]\ntests/test_parse_attach_logs.py::test_parser_extracts_pdu_session_events PASSED [ 70%]\ntests/test_parse_attach_logs.py::test_parser_handles_noisy_unmatched_lines_without_crashing PASSED [ 72%]\ntests/test_parse_attach_logs.py::test_parser_calculates_durations_correctly PASSED [ 74%]\ntests/test_parse_attach_logs.py::test_parser_reports_missing_events_for_incomplete_logs PASSED [ 75%]\ntests/test_parse_attach_logs.py::test_csv_output_has_expected_columns PASSED [ 77%]\ntests/test_parse_attach_logs.py::test_json_output_is_valid PASSED        [ 79%]\ntests/test_parse_attach_logs.py::test_cli_returns_success_on_sample_logs PASSED [ 80%]\ntests/test_parser_protocol_events.py::test_parser_detects_negative_control_plane_events PASSED [ 82%]\ntests/test_parser_protocol_events.py::test_parser_detects_pfcp_and_user_plane_events PASSED [ 83%]\ntests/test_pcap.py::test_tshark_metadata_extraction_is_optional PASSED   [ 85%]\ntests/test_preflight.py::test_optional_missing_command_is_warn PASSED    [ 87%]\ntests/test_preflight.py::test_required_missing_command_is_fail PASSED    [ 88%]\ntests/test_preflight.py::test_sctp_check_fails_closed_on_non_linux PASSED [ 90%]\ntests/test_scenarios.py::test_all_repository_scenarios_are_valid PASSED  [ 91%]\ntests/test_scenarios.py::test_missing_id_is_rejected PASSED              [ 93%]\ntests/test_scenarios.py::test_invalid_fault_type_is_rejected PASSED      [ 95%]\ntests/test_scenarios.py::test_unknown_expected_event_is_rejected PASSED  [ 96%]\ntests/test_scenarios.py::test_arbitrary_command_key_is_rejected PASSED   [ 98%]\ntests/test_scenarios.py::test_invalid_timeout_is_rejected PASSED         [100%]\n\n================================ tests coverage ================================\n______________ coverage: platform darwin, python 3.11.15-final-0 _______________\n\nName                               Stmts   Miss  Cover   Missing\n----------------------------------------------------------------\nscripts/parse_attach_logs.py          12      1    92%   55\nsrc/fiveg_lab/__init__.py              1      0   100%\nsrc/fiveg_lab/assertions.py           18      1    94%   42\nsrc/fiveg_lab/cli.py                  88     15    83%   41-43, 46-47, 79-81, 84, 117-127, 147\nsrc/fiveg_lab/config.py              134      7    95%   33-34, 43, 60, 262, 277-278\nsrc/fiveg_lab/evidence.py             34      1    97%   43\nsrc/fiveg_lab/fault_injection.py     224     35    84%   67-68, 73-74, 87-96, 102, 117-120, 138, 145, 147-150, 155, 162-170, 183, 200, 215-216, 327, 339-341, 375-376\nsrc/fiveg_lab/models.py               56      0   100%\nsrc/fiveg_lab/orchestration.py       307     80    74%   106-140, 144-157, 193-221, 254-272, 316, 403, 507-536, 553, 571-592, 637, 645, 659, 664, 681-684, 707, 711-719, 723-739, 743-750, 754-758\nsrc/fiveg_lab/parser.py              145     38    74%   163-166, 173-176, 224-225, 252-253, 324-330, 334-355\nsrc/fiveg_lab/pcap.py                 20     11    45%   10, 16-51\nsrc/fiveg_lab/preflight.py            69     48    30%   15, 21, 26-67, 73-78, 82-88, 96-102, 110-112, 120\nsrc/fiveg_lab/scenarios.py            89      9    90%   68-69, 111-112, 127-128, 157-158, 167\n----------------------------------------------------------------\nTOTAL                               1197    246    79%\n======================= 62 passed, 1 deselected in 1.86s =======================\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    },
+    "python-version": {
+      "command": [
+        "python",
+        "--version"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.502040+00:00",
+      "duration_seconds": 0.025,
+      "exit_code": 0,
+      "stdout": "Python 3.12.10\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "ruff": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "started_at_utc": "2026-09-08T14:39:59.501661+00:00",
+      "duration_seconds": 0.43,
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    },
+    "sctp-modules": {
+      "command": [
+        "bash",
+        "-o",
+        "pipefail",
+        "-c",
+        "lsmod | grep sctp"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.585217+00:00",
+      "duration_seconds": 0.012,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "bash: lsmod: command not found\n",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "sync": {
+      "command": [
+        "uv",
+        "sync",
+        "--frozen"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.333432+00:00",
+      "duration_seconds": 0.188,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "Checked 127 packages in 29ms\n",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    },
+    "tun-device": {
+      "command": [
+        "ls",
+        "-l",
+        "/dev/net/tun"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.580804+00:00",
+      "duration_seconds": 0.004,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "ls: /dev/net/tun: No such file or directory\n",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "uname": {
+      "command": [
+        "uname",
+        "-a"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.442459+00:00",
+      "duration_seconds": 0.006,
+      "exit_code": 0,
+      "stdout": "Darwin <host> 27.0.0 Darwin Kernel Version 27.0.0: Tue Aug 11 22:18:52 PDT 2026; root:xnu-13432.1.9~3/RELEASE_ARM64_T6000 arm64\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "uv-version": {
+      "command": [
+        "uv",
+        "--version"
+      ],
+      "started_at_utc": "2026-09-08T14:39:44.519673+00:00",
+      "duration_seconds": 0.014,
+      "exit_code": 0,
+      "stdout": "uv 0.11.16 (135a36367 2026-05-21 aarch64-apple-darwin)\n",
+      "stderr": "",
+      "evidence_type": "host_preflight_metadata",
+      "runtime_executed": false
+    },
+    "validate-config": {
+      "command": [
+        "make",
+        "validate-config"
+      ],
+      "started_at_utc": "2026-09-08T14:39:59.597161+00:00",
+      "duration_seconds": 0.45,
+      "exit_code": 0,
+      "stdout": "uv run 5g-lab validate-config\nPASS\trequired_network_functions\tservices=['amf', 'ausf', 'dn-server', 'gnb', 'mongodb', 'nrf', 'open5gs-dbctl', 'pcf', 'smf', 'udm', 'udr', 'ue', 'upf']\nPASS\topen5gs_2_8_pcf_required_mode\tOpen5GS 2.8.0 PCF must be present, use the Compose SBI IP, and use lab MongoDB\nPASS\topen5gs_2_8_nssf_bypass_mode\tNSSF is intentionally omitted only while SMF advertises the matching S-NSSAI/DNN to NRF\nPASS\tunique_static_container_ips\t['10.45.0.10', '10.45.0.11', '10.45.0.22', '10.45.0.23', '10.45.0.24', '10.45.0.25', '10.45.0.20', '10.45.0.21', '10.45.0.30', '10.46.0.30', '10.45.0.40', '10.45.0.50', '10.46.0.100']\nPASS\tvalid_ip_addresses\tall static IP addresses parse\nPASS\tmcc_consistent\tMCC must match NRF, AMF, gNB, UE, and subscriber\nPASS\tmnc_consistent\tMNC must match NRF, AMF, gNB, UE, and subscriber\nPASS\ttac_consistent\tAMF TAI TAC must match gNB TAC\nPASS\tamf_ngap_ip_matches_compose\t10.45.0.20\nPASS\tgnb_points_to_amf_ngap\t10.45.0.20\nPASS\tgnb_ngap_ip_matches_compose\t10.45.0.40\nPASS\tgnb_gtp_ip_matches_compose\t10.45.0.40\nPASS\tdnn_consistent\tDNN/APN must match SMF, UPF, subscriber, and UE\nPASS\tue_ipv4_pool_consistent\tSMF/UPF/subscriber UE pool must match\nPASS\tsmf_upf_pfcp_ip_consistent\tSMF N4 client must target UPF PFCP IP\nPASS\tsst_consistent\tSST must match AMF, gNB, UE, and subscriber\nPASS\tsd_consistent\tSD must match AMF, gNB, UE, and subscriber\nPASS\tsupi_format\timsi-001010000000001\nPASS\tsupi_matches_subscriber\tUE SUPI must match subscriber\nPASS\tsubscriber_key_format\tsubscriber K must be 16-byte hex\nPASS\tue_key_matches_subscriber\tUE K must match subscriber\nPASS\tue_opc_matches_subscriber\tUE OPc must match subscriber\nPASS\tue_amf_matches_subscriber\tUE AMF auth field must match subscriber\nPASS\tcritical_images_not_latest\tfloating=[]\nWARN\timage_overrides_supported\tImages can be overridden by environment variables; defaults remain pinned.\n",
+      "stderr": "",
+      "evidence_type": "static_fixture_validation",
+      "runtime_executed": false
+    }
+  }
+}

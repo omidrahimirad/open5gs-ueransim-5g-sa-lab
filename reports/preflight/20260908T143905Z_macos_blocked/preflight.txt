@@ -1,0 +1,21 @@
+$ make preflight
+./scripts/preflight.sh
+FAIL	linux_os	detected=Darwin arm64
+PASS	docker_installed	docker found
+FAIL	iproute2_available	ip not found
+WARN	ss_available	ss not found
+WARN	tc_available	tc not found
+PASS	tcpdump_available	tcpdump found
+WARN	tshark_available	tshark not found
+PASS	jq_available	jq found
+PASS	curl_available	curl found
+PASS	ping_available	ping found
+PASS	docker_compose_available	Docker Compose version v5.1.4
+FAIL	tun_device	/dev/net/tun missing
+FAIL	sctp_kernel_support	SCTP requires a Linux runtime
+WARN	ip_forwarding	Linux sysctl unavailable on this host
+PASS	host_port_conflicts	no TCP conflicts detected
+PASS	disk_space	free_gib=36.9
+make: *** [preflight] Error 1
+
+make exit code: 2
