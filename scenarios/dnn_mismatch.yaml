@@ -1,0 +1,20 @@
+id: dnn_mismatch
+title: Unsupported DNN request
+category: SESSION_MANAGEMENT
+description: Request a DNN/APN that does not match the subscriber/session configuration.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+fault:
+  type: dnn_mismatch
+expected_control_plane: Registration may complete; PDU session establishment should be rejected or fail.
+expected_user_plane: No user-plane service exists for the unsupported DNN.
+expected_events:
+  - registration_accept
+  - pdu_session_reject
+forbidden_events:
+  - pdu_session_accept
+  - user_plane_success
+recovery_action: Restore DNN/APN to internet in UE, SMF, UPF, and subscriber profile.
+recovery_expectation: Healthy baseline can pass again after DNN consistency is restored.
+timeout_seconds: 300
+runtime_validated: false

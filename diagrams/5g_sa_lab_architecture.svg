@@ -1,73 +1,102 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
-  <title id="title">Open5GS UERANSIM 5G SA Lab Architecture</title>
-  <desc id="desc">UERANSIM UE and gNB connect to Open5GS AMF, SMF, UPF, NRF, MongoDB, and data network using N1, N2, N3, N4, N6 and SBI interfaces.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="720" viewBox="0 0 1300 720" role="img" aria-labelledby="title desc">
+  <title id="title">5G SA System Integration and Failure Injection Validation Lab</title>
+  <desc id="desc">UERANSIM UE and gNB connect to Open5GS NRF, AMF, AUSF, UDM, UDR, PCF, SMF, UPF, MongoDB, internal data network server, and a validation harness.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f3b52"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#253247"/>
     </marker>
     <style>
-      .box { fill: #f8fafc; stroke: #2f3b52; stroke-width: 2; rx: 8; }
-      .core { fill: #eef6ff; }
-      .ran { fill: #f2fbf5; }
-      .db { fill: #fff7ed; }
-      .text { font-family: Arial, sans-serif; font-size: 18px; fill: #172033; }
-      .small { font-family: Arial, sans-serif; font-size: 14px; fill: #45536b; }
-      .line { stroke: #2f3b52; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .box { fill: #f8fafc; stroke: #253247; stroke-width: 2; rx: 8; }
+      .ran { fill: #effaf2; }
+      .core { fill: #edf6ff; }
+      .db { fill: #fff7e6; }
+      .dn { fill: #f4f0ff; }
+      .tool { fill: #f3f4f6; }
+      .text { font-family: Arial, sans-serif; font-size: 17px; fill: #142033; }
+      .small { font-family: Arial, sans-serif; font-size: 13px; fill: #46566d; }
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: 700; fill: #142033; }
+      .line { stroke: #253247; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
       .dash { stroke-dasharray: 7 6; }
     </style>
   </defs>
-  <rect width="1200" height="520" fill="#ffffff"/>
-  <text x="40" y="42" class="text" style="font-size:24px;font-weight:700">Open5GS + UERANSIM 5G Standalone Lab</text>
+  <rect width="1300" height="720" fill="#ffffff"/>
+  <text x="40" y="44" class="title">5G SA System Integration and Failure-Injection Validation Lab</text>
 
-  <rect class="box ran" x="55" y="120" width="160" height="90"/>
-  <text class="text" x="88" y="158">UE</text>
-  <text class="small" x="76" y="184">UERANSIM</text>
+  <rect x="40" y="90" width="270" height="210" fill="none" stroke="#91b39a" stroke-width="2"/>
+  <text x="58" y="120" class="text">UERANSIM RAN/UE</text>
+  <rect class="box ran" x="82" y="150" width="170" height="62"/>
+  <text class="text" x="144" y="186">UE</text>
+  <rect class="box ran" x="82" y="230" width="170" height="62"/>
+  <text class="text" x="138" y="266">gNB</text>
+  <path class="line" d="M167 212 L167 230"/>
+  <text class="small" x="178" y="224">N1 NAS</text>
 
-  <rect class="box ran" x="285" y="120" width="170" height="90"/>
-  <text class="text" x="322" y="158">gNB</text>
-  <text class="small" x="310" y="184">UERANSIM</text>
+  <rect x="380" y="90" width="570" height="420" fill="none" stroke="#8ab1d6" stroke-width="2"/>
+  <text x="398" y="120" class="text">Open5GS 5G Core</text>
+  <rect class="box core" x="420" y="150" width="130" height="62"/>
+  <text class="text" x="466" y="186">AMF</text>
+  <rect class="box core" x="590" y="150" width="130" height="62"/>
+  <text class="text" x="634" y="186">AUSF</text>
+  <rect class="box core" x="760" y="150" width="130" height="62"/>
+  <text class="text" x="807" y="186">NRF</text>
+  <rect class="box core" x="590" y="250" width="130" height="62"/>
+  <text class="text" x="636" y="286">UDM</text>
+  <rect class="box core" x="760" y="250" width="130" height="62"/>
+  <text class="text" x="808" y="286">UDR</text>
+  <rect class="box core" x="420" y="250" width="130" height="62"/>
+  <text class="text" x="468" y="286">PCF</text>
+  <rect class="box core" x="420" y="360" width="130" height="62"/>
+  <text class="text" x="468" y="396">SMF</text>
+  <rect class="box core" x="590" y="360" width="130" height="62"/>
+  <text class="text" x="638" y="396">UPF</text>
+  <rect class="box db" x="760" y="360" width="130" height="62"/>
+  <text class="text" x="786" y="388">MongoDB</text>
+  <text class="small" x="786" y="406">subscriber DB</text>
 
-  <rect class="box core" x="540" y="88" width="170" height="80"/>
-  <text class="text" x="588" y="133">AMF</text>
+  <rect x="1030" y="320" width="210" height="120" fill="none" stroke="#b0a0d8" stroke-width="2"/>
+  <text x="1048" y="350" class="text">Data Network</text>
+  <rect class="box dn" x="1062" y="370" width="145" height="52"/>
+  <text class="text" x="1082" y="402">DN server</text>
 
-  <rect class="box core" x="540" y="225" width="170" height="80"/>
-  <text class="text" x="590" y="270">SMF</text>
+  <path class="line" d="M252 261 C320 258 350 210 420 181"/>
+  <text class="small" x="288" y="220">N2 NGAP/SCTP</text>
+  <path class="line" d="M252 274 C350 340 470 388 590 391"/>
+  <text class="small" x="332" y="358">N3 GTP-U</text>
+  <path class="line" d="M550 181 L590 181"/>
+  <text class="small" x="555" y="165">SBI</text>
+  <path class="line" d="M720 181 L760 181"/>
+  <text class="small" x="724" y="165">SBI</text>
+  <path class="line" d="M655 212 L655 250"/>
+  <text class="small" x="666" y="236">auth data</text>
+  <path class="line" d="M720 281 L760 281"/>
+  <text class="small" x="724" y="265">SBI</text>
+  <path class="line" d="M485 212 L485 250"/>
+  <text class="small" x="498" y="236">AM policy</text>
+  <path class="line" d="M485 360 L485 312"/>
+  <text class="small" x="498" y="340">SM policy</text>
+  <path class="line" d="M458 212 C390 265 390 340 420 391"/>
+  <text class="small" x="388" y="320">session</text>
+  <path class="line" d="M550 391 L590 391"/>
+  <text class="small" x="555" y="374">N4 PFCP</text>
+  <path class="line" d="M890 391 L1062 396"/>
+  <text class="small" x="970" y="378">N6</text>
+  <path class="line dash" d="M825 312 L825 360"/>
+  <text class="small" x="837" y="340">DB</text>
 
-  <rect class="box core" x="790" y="225" width="170" height="80"/>
-  <text class="text" x="840" y="270">UPF</text>
-
-  <rect class="box core" x="790" y="88" width="170" height="80"/>
-  <text class="text" x="840" y="133">NRF</text>
-
-  <rect class="box db" x="540" y="370" width="170" height="80"/>
-  <text class="text" x="578" y="405">MongoDB</text>
-  <text class="small" x="566" y="429">subscriber DB</text>
-
-  <rect class="box" x="1020" y="225" width="135" height="80"/>
-  <text class="text" x="1052" y="258">Data</text>
-  <text class="small" x="1045" y="283">Network</text>
-
-  <path class="line" d="M215 165 L285 165"/>
-  <text class="small" x="228" y="151">N1 NAS</text>
-
-  <path class="line" d="M455 146 L540 128"/>
-  <text class="small" x="468" y="116">N2 NGAP/SCTP</text>
-
-  <path class="line" d="M455 190 C560 205 655 235 790 255"/>
-  <text class="small" x="565" y="218">N3 GTP-U</text>
-
-  <path class="line" d="M710 128 L790 128"/>
-  <text class="small" x="731" y="113">SBI</text>
-
-  <path class="line" d="M710 265 L790 265"/>
-  <text class="small" x="731" y="250">N4 PFCP</text>
-
-  <path class="line" d="M625 168 L625 225"/>
-  <text class="small" x="637" y="202">N11</text>
-
-  <path class="line" d="M960 265 L1020 265"/>
-  <text class="small" x="975" y="250">N6</text>
-
-  <path class="line dash" d="M625 305 L625 370"/>
-  <text class="small" x="637" y="345">state</text>
+  <rect x="120" y="565" width="1060" height="95" fill="none" stroke="#b8bec8" stroke-width="2"/>
+  <text x="142" y="594" class="text">Validation Harness</text>
+  <rect class="box tool" x="170" y="615" width="155" height="35"/>
+  <text class="small" x="202" y="637">Scenario runner</text>
+  <rect class="box tool" x="375" y="615" width="155" height="35"/>
+  <text class="small" x="414" y="637">Fault injection</text>
+  <rect class="box tool" x="580" y="615" width="155" height="35"/>
+  <text class="small" x="620" y="637">Evidence</text>
+  <rect class="box tool" x="785" y="615" width="155" height="35"/>
+  <text class="small" x="820" y="637">Assertions</text>
+  <rect class="box tool" x="990" y="615" width="155" height="35"/>
+  <text class="small" x="1032" y="637">Report</text>
+  <path class="line" d="M325 632 L375 632"/>
+  <path class="line" d="M530 632 L580 632"/>
+  <path class="line" d="M735 632 L785 632"/>
+  <path class="line" d="M940 632 L990 632"/>
 </svg>

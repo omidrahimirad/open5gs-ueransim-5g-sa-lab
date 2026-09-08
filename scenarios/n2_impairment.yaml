@@ -1,0 +1,20 @@
+id: n2_impairment
+title: N2 SCTP/NGAP impairment
+category: TRANSPORT
+description: Drop only gNB egress SCTP traffic to the AMF on port 38412 with a tagged tc filter.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+  - tc flower and clsact are available inside the target container.
+fault:
+  type: n2_impairment
+  target: gnb
+  value: eth0
+expected_control_plane: NGAP/SCTP control-plane impact is observed or explicitly not affected.
+expected_user_plane: User-plane result is interpreted only after control-plane state is known.
+expected_events:
+  - component_failure
+forbidden_events: []
+recovery_action: Remove the exact SCTP/38412 tc filter, remove clsact only if this run created it, and rerun baseline assertions.
+recovery_expectation: Baseline must pass after impairment is removed.
+timeout_seconds: 420
+runtime_validated: false

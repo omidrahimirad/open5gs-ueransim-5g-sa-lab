@@ -28,8 +28,8 @@ if command -v ss >/dev/null 2>&1 && ss -H -ltn 2>/dev/null | awk '{print $4}' | 
   log "WARNING: TCP port 7777 or SCTP/TCP-visible port 38412 appears in use. Check for local conflicts if containers fail to bind."
 fi
 
-log "Starting MongoDB and Open5GS 5GC network functions."
-docker compose up -d mongodb nrf amf upf smf
+log "Starting MongoDB, Open5GS 5GC network functions, and internal DN target."
+docker compose up -d mongodb nrf ausf udm udr pcf amf upf smf dn-server
 
 log "Core services requested. Check health/logs with:"
 echo "  docker compose ps"

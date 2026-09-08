@@ -8,7 +8,7 @@ TS="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR="$ROOT_DIR/logs/$TS"
 mkdir -p "$OUT_DIR"
 
-services=(ue gnb amf smf upf nrf mongodb)
+services=(ue gnb amf ausf udm udr pcf smf upf nrf mongodb dn-server)
 
 if ! docker compose ps >/dev/null 2>&1; then
   echo "ERROR: docker compose is not available or this is not the lab directory." >&2

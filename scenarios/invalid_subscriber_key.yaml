@@ -1,0 +1,20 @@
+id: invalid_subscriber_key
+title: Authentication failure from mismatched subscriber key
+category: AUTHENTICATION
+description: Intentionally mismatch UE K or OPc and verify registration does not complete.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+fault:
+  type: subscriber_key_mismatch
+expected_control_plane: Authentication failure or registration rejection is observed.
+expected_user_plane: No PDU session or user-plane traffic is established.
+expected_events:
+  - authentication_failure
+forbidden_events:
+  - registration_accept
+  - pdu_session_accept
+  - user_plane_success
+recovery_action: Restore known-good subscriber key/OPc, reprovision subscriber, restart UE if needed.
+recovery_expectation: Healthy baseline can pass again after credentials are restored.
+timeout_seconds: 300
+runtime_validated: false

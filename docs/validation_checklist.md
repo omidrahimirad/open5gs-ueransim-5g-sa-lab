@@ -8,6 +8,9 @@
 - [ ] `/dev/net/tun` exists.
 - [ ] MongoDB container is healthy.
 - [ ] Open5GS NRF is running.
+- [ ] Open5GS AUSF is running.
+- [ ] Open5GS UDM is running.
+- [ ] Open5GS UDR is running and can reach MongoDB.
 - [ ] Open5GS AMF is running and listening for NGAP/SCTP.
 - [ ] Open5GS SMF is running.
 - [ ] Open5GS UPF is running with required network privileges.
@@ -18,10 +21,10 @@
 - [ ] PDU session is established for DNN `internet`.
 - [ ] UE receives an IPv4 address from `10.45.1.0/24`.
 - [ ] UE tunnel interface exists.
-- [ ] User-plane ping works.
+- [ ] User-plane ping works through `uesimtun0` to the internal DN server.
 - [ ] Logs are collected with `scripts/collect_logs.sh`.
 - [ ] Parser output is generated.
 - [ ] Notebook is executed against parsed logs.
 - [ ] Latency and session reports are updated with real run evidence.
-- [ ] Real evidence is stored under `evidence/real_run_YYYYMMDD/`.
+- [ ] Real evidence is stored under `evidence/real_runs/<run_id>/`.
 - [ ] README validation status is updated only after evidence exists.

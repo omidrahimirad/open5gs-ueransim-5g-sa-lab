@@ -1,0 +1,20 @@
+id: unknown_subscriber
+title: Unknown SUPI absent from subscriber database
+category: SUBSCRIBER
+description: Start UE with a SUPI that is not provisioned and verify attach cannot complete.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+fault:
+  type: unknown_subscriber
+expected_control_plane: Subscriber/authentication failure evidence is observed.
+expected_user_plane: No PDU session or DN traffic is established.
+expected_events:
+  - registration_reject
+forbidden_events:
+  - registration_accept
+  - pdu_session_accept
+  - user_plane_success
+recovery_action: Restore known-good SUPI and subscriber DB record.
+recovery_expectation: Healthy baseline can pass again after subscriber identity is restored.
+timeout_seconds: 300
+runtime_validated: false

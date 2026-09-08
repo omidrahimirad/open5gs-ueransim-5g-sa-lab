@@ -9,9 +9,9 @@ This report template documents the method and expected evidence for the 5G SA la
 | Host OS | Ubuntu 22.04/24.04 LTS recommended |
 | Docker | Record with `docker version` |
 | Docker Compose | Record with `docker compose version` |
-| Open5GS image | `${OPEN5GS_IMAGE:-gradiant/open5gs:latest}` |
-| UERANSIM image | `${UERANSIM_IMAGE:-gradiant/ueransim:latest}` |
-| Core network | Open5GS AMF, SMF, UPF, NRF, MongoDB |
+| Open5GS image | `${OPEN5GS_IMAGE:-gradiant/open5gs:2.8.0}` |
+| UERANSIM image | `${UERANSIM_IMAGE:-gradiant/ueransim:3.3.0}` |
+| Core network | Open5GS NRF, AMF, AUSF, UDM, UDR, SMF, UPF, MongoDB |
 | RAN/UE | UERANSIM gNB and UE |
 | DNN / slice | `internet`, SST `1`, SD `000001` |
 
@@ -26,7 +26,7 @@ This report template documents the method and expected evidence for the 5G SA la
 
 | Test case | Packets transmitted | Packets received | Packet loss | Min latency | Avg latency | Max latency | Notes |
 |---|---:|---:|---:|---:|---:|---:|---|
-| Sample ping to 8.8.8.8 via UE PDU session | 5 | 5 | 0% | 18.2 ms | 22.7 ms | 31.4 ms | Sample only; replace after real run |
+| Sample ping to internal DN target via UE PDU session | 5 | 5 | 0% | 18.2 ms | 22.7 ms | 31.4 ms | Sample only; replace after real run |
 | Failed-session example | 5 | 0 | 100% | n/a | n/a | n/a | Usually DNN/slice/UPF route issue |
 
 ## Interpretation

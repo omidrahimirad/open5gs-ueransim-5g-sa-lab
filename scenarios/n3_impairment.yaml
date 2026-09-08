@@ -1,0 +1,20 @@
+id: n3_impairment
+title: N3 GTP-U impairment
+category: TRANSPORT
+description: Drop only gNB egress UDP traffic to the UPF on GTP-U port 2152 with a tagged tc filter.
+preconditions:
+  - baseline_e2e has passed in the same runtime environment.
+  - tc flower and clsact are available inside the target container.
+fault:
+  type: n3_impairment
+  target: gnb
+  value: eth0
+expected_control_plane: Registration/control plane may remain healthy.
+expected_user_plane: UE tunnel traffic degrades or fails while impairment is active.
+expected_events:
+  - user_plane_failure
+forbidden_events: []
+recovery_action: Remove the exact UDP/2152 tc filter, remove clsact only if this run created it, and rerun baseline assertions.
+recovery_expectation: Full baseline control-plane, session, tunnel, and user-plane state must pass after impairment is removed.
+timeout_seconds: 420
+runtime_validated: false

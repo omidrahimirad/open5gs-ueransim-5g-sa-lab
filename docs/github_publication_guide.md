@@ -2,7 +2,7 @@
 
 ## Repository Description
 
-Reproducible 5G SA lab using Open5GS and UERANSIM with Docker Compose, subscriber config, log collection, Python attach/PDU parser, notebook analysis, reports, and an honest Linux runtime evidence workflow.
+Open5GS + UERANSIM 5G SA integration lab with pinned Docker runtime, config preflight, scenario assertions, protocol-aware log evidence, failure-injection hooks, and honest Linux runtime evidence workflow.
 
 ## Suggested Topics
 
@@ -11,91 +11,98 @@ Reproducible 5G SA lab using Open5GS and UERANSIM with Docker Compose, subscribe
 5g-sa
 open5gs
 ueransim
-telecom
-ran
 5g-core
+ran
+telecom
+system-integration
+failure-injection
+network-validation
+linux-networking
 docker-compose
-networking
-linux
+pfcp
+gtpu
+ngap
+sctp
 python
-log-analysis
-wireless
-telecom-lab
+pytest
+devops
 ```
 
 ## Suggested Pinned-Repo Description
 
-5G Standalone lab portfolio project: Open5GS core, UERANSIM gNB/UE, Docker Compose, subscriber provisioning, traffic checks, log parsing, notebook analysis, and real-run evidence workflow.
+5G SA system-integration validation lab using Open5GS and UERANSIM, with deterministic config checks, scenario assertions, protocol-aware evidence parsing, scoped failure injection, and recovery workflow. Runtime evidence is pending a real Linux run.
 
 ## Suggested LinkedIn Post
 
-I built a 5G Standalone lab portfolio project using Open5GS and UERANSIM.
+I upgraded my Open5GS + UERANSIM 5G Standalone lab into a system-integration validation project.
 
-The goal is to show practical understanding across 5G Core, RAN-facing procedures, Linux networking, Docker-based lab setup, and Python log analysis. The repository includes AMF/SMF/UPF/NRF and gNB/UE configuration, subscriber provisioning notes, traffic validation scripts, log collection, attach/PDU session parsing, a Jupyter analysis notebook, architecture diagrams, troubleshooting notes, and a real-run evidence workflow.
+The repository now models the Open5GS 2.8.0 functions required for one-UE validation: NRF, AMF, AUSF, UDM, UDR, PCF, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target. It includes pinned runtime versions, deterministic config checks, Linux preflight, scenario definitions, expected-vs-observed assertions, protocol-aware log parsing, protocol-scoped failure-injection hooks, and a structured evidence/reporting workflow.
 
-I kept the project intentionally honest: current validation covers configuration checks and sample-log parser analysis; full Linux runtime validation will be added only after collecting real evidence from an Ubuntu host.
+Current status is intentionally honest: static and fixture validation are implemented; real Linux runtime evidence is still pending and will only be claimed after actual Ubuntu execution proves NG setup, registration, PDU session, UE tunnel, DN traffic, and recovery behavior.
 
-Relevant for 5G/RAN Engineer, 5G Core/Lab Engineer, Network Integration Engineer, RF & Wireless Test Engineer, and telecom support roles.
+Relevant for 5G Core, RAN integration, telecom systems, wireless test, network integration, and DevOps-oriented lab engineering roles.
 
 Repository: https://github.com/omidrahimirad/open5gs-ueransim-5g-sa-lab
 
 ## Suggested CV Bullet
 
-Built a documented 5G Standalone lab portfolio using Open5GS, UERANSIM, Docker Compose, Linux networking, and Python log parsing to demonstrate UE registration, authentication/security flow, PDU session analysis, traffic validation workflow, and evidence-based troubleshooting.
+Built a deterministic Open5GS/UERANSIM 5G SA system-integration lab with pinned Docker runtime, 5GC/RAN configuration validation, Linux preflight, protocol-aware log parsing, scenario assertions, scoped failure-injection hooks, and evidence-based recovery reporting; current status: static + fixture validated, Linux runtime evidence pending.
 
 ## Suggested Commit Sequence
 
 ```text
-1. Harden Open5GS and UERANSIM lab networking
-2. Improve attach and PDU session log parser
-3. Add real-run evidence workflow
-4. Strengthen troubleshooting and validation documentation
-5. Polish README for public GitHub portfolio
-6. Add uv-based Python tooling, tests, pre-commit, and CI
+chore: pin reproducible 5g lab runtime
+feat: complete 5g core integration architecture
+feat: add configuration and linux preflight validation
+feat: add deterministic validation scenario framework
+feat: add protocol evidence collection and assertions
+feat: add failure injection and recovery checks
+test: add validation and safety coverage
+docs: document 5g sa system validation workflow
 ```
 
 ## Suggested Branch And Push Commands
 
-If committing directly to `main`:
-
 ```bash
-git status -sb
+git checkout main
+git pull origin main
+git checkout -b feat/v2-system-integration-validation
 git add .
-git commit -m "Modernize Python development workflow"
-git push origin main
+git commit -m "feat: add 5g sa system validation framework"
+git push -u origin feat/v2-system-integration-validation
 ```
 
-If using a review branch:
-
-```bash
-git checkout -b polish/github-portfolio
-git add .
-git commit -m "Modernize Python development workflow"
-git push -u origin polish/github-portfolio
-```
+Open a pull request and do not merge until CI is green and the diff has been reviewed.
 
 ## Local Quality Gate Before Publication
 
 ```bash
-uv sync
-make check
+uv sync --frozen
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src scripts tests
+uv run pytest -m "not runtime" -v
 uv run pre-commit run --all-files
+docker compose config
+make check
 ```
 
 ## Do Not Claim Before Real Linux Validation
 
 Do not claim:
 
-- The lab has fully executed end to end.
-- UE registration succeeded on real runtime logs.
-- PDU session establishment succeeded on the current host.
-- Ping/latency values are measured results.
-- Docker Desktop on macOS is validated for SCTP/TUN/user-plane behavior.
-- The lab represents commercial RF/RAN latency or scheduler behavior.
+- runtime validated
+- full E2E execution succeeded
+- UE registration succeeded from real logs
+- PDU session establishment succeeded from real logs
+- packet captures prove NGAP/PFCP/GTP-U behavior
+- recovery times or latency values were measured
+- Docker Desktop validates SCTP/TUN/user-plane behavior
+- UERANSIM represents RF or commercial RAN performance
 
 Safe wording before real evidence:
 
-- "Configuration and parser validated with sample logs."
-- "Linux runtime validation pending."
+- "Static and fixture validation are implemented."
+- "Real Linux runtime validation is pending."
 - "Designed for Ubuntu/Linux execution with SCTP and TUN support."
-- "Sample logs are included for parser demonstration only."
+- "Sample logs demonstrate parser behavior only."

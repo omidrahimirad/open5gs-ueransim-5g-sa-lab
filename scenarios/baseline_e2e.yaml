@@ -1,0 +1,31 @@
+id: baseline_e2e
+title: Healthy registration, PDU session, and DN traffic
+category: USER_PLANE
+description: Validate the healthy one-UE baseline before any failure scenario is interpreted.
+preconditions:
+  - Linux preflight passes.
+  - Configuration validator passes.
+  - Subscriber is provisioned in Open5GS DB.
+fault:
+  type: none
+expected_control_plane: NG setup, registration, authentication, security mode, and PDU session complete.
+expected_user_plane: UE tunnel exists and interface-bound traffic reaches the DN test server.
+expected_events:
+  - ng_setup
+  - registration_request
+  - authentication
+  - security_mode
+  - registration_accept
+  - pdu_session_request
+  - pdu_session_accept
+  - ue_tunnel_created
+  - user_plane_success
+forbidden_events:
+  - authentication_failure
+  - registration_reject
+  - pdu_session_reject
+  - user_plane_failure
+recovery_action: none
+recovery_expectation: Baseline must remain healthy; no recovery action is expected.
+timeout_seconds: 300
+runtime_validated: false
