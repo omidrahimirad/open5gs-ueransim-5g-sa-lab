@@ -79,12 +79,20 @@ make check
 For a real runtime attempt, use Ubuntu/Linux with Docker Engine, SCTP, `/dev/net/tun`, and container networking privileges:
 
 ```bash
+make lab-down
 make preflight
+docker compose pull upf mongodb
+make runtime-preflight
 make validate-config
 make lab-up
+# Verify MongoDB health, core logs, and UPF ogstun before continuing.
 make subscriber-add
-docker compose --profile ran up -d gnb ue
+docker compose --profile ran up -d gnb
+# Verify NG Setup before starting the UE.
+docker compose --profile ran up -d ue
+# Verify registration, authentication, security, PDU session, and uesimtun0.
 ./scripts/traffic_test.sh
+make baseline-test
 make collect-evidence
 ```
 
@@ -99,11 +107,15 @@ uv run 5g-lab scenario run upf_unavailable --baseline-result reports/runtime/<ba
 
 On macOS/Docker Desktop, runtime scenarios are expected to be blocked or incomplete because SCTP and TUN behavior are host dependent.
 
+Host preflight does not prove that an image's effective user and capabilities can create a TUN interface. `make runtime-preflight` explicitly checks the UPF container TUN operation in isolation on Linux; use `uv run 5g-lab runtime-preflight --mongodb` to include isolated MongoDB startup and ping. These checks require a reachable Linux Docker daemon and locally available configured images matching its native architecture, and are separate from static CI and full baseline validation. See [runtime validation and troubleshooting](docs/runtime_validation.md) and [the user-supplied Linux bootstrap findings](docs/runtime_findings.md).
+
 ## Engineering Workflow
 
 ```bash
 make validate-config      # deterministic cross-file config checks
 make preflight            # Linux host capability checks, no host mutation
+docker compose pull upf mongodb  # fetch the configured probe images explicitly
+make runtime-preflight    # isolated UPF container TUN creation and cleanup
 make lab-up               # start core NFs and internal DN target
 make subscriber-add       # idempotent subscriber provisioning path via pinned dbctl helper
 make baseline-test        # run baseline scenario control surface
@@ -205,7 +217,9 @@ tests/          Unit and fixture tests; runtime tests are opt-in only
 
 ## Next Step: Linux Runtime Evidence
 
-Run and capture `baseline_e2e` on a real Ubuntu/Linux environment, then add curated evidence under `evidence/real_runs/<run_id>/`. Until that exists, keep the public status as **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**.
+User-supplied Linux tests identified MongoDB kernel/rseq startup and UPF TUN permission defects; their isolated workaround results are documented in [runtime findings](docs/runtime_findings.md). They do not establish a healthy 5G baseline.
+
+On the external Ubuntu/Linux host, perform a clean Compose teardown, run host and container runtime preflight, start and verify MongoDB/core/UPF, provision the subscriber, verify gNB NG Setup, then verify UE registration/authentication/security/PDU session, `uesimtun0`, and DN traffic. Run and capture `baseline_e2e`, then add curated evidence under `evidence/real_runs/<run_id>/`. Until that exists, keep the public status as **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**.
 
 ## References
 

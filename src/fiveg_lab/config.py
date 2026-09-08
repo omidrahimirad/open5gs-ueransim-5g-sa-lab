@@ -252,7 +252,80 @@ def validate_repo(repo_root: Path) -> list[Check]:
     )
 
     checks.extend(validate_image_defaults(compose))
+    checks.extend(validate_container_runtime_contract(compose))
     return checks
+
+
+def compose_environment(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return cast("dict[str, Any]", value)
+    if isinstance(value, list):
+        return {
+            item.partition("=")[0]: item.partition("=")[2]
+            for item in value
+            if isinstance(item, str) and "=" in item
+        }
+    return {}
+
+
+def exposes_tun_device(devices: Any) -> bool:
+    if not isinstance(devices, list):
+        return False
+    for device in devices:
+        if isinstance(device, str):
+            parts = device.split(":")
+            if len(parts) not in {2, 3}:
+                continue
+            source, target, *permission_fields = parts
+            permissions = permission_fields[0] if permission_fields else "rwm"
+        elif isinstance(device, dict):
+            source = str(device.get("source", ""))
+            target = str(device.get("target", ""))
+            permissions = str(device.get("permissions", "rwm"))
+        else:
+            continue
+        if source == target == "/dev/net/tun" and {"r", "w"} <= set(permissions):
+            return True
+    return False
+
+
+def validate_container_runtime_contract(compose: dict[str, Any]) -> list[Check]:
+    """Protect declared bootstrap settings; this does not prove runtime capability."""
+    mongo_env = compose_environment(nested(compose, "services", "mongodb", "environment"))
+    upf = nested(compose, "services", "upf")
+    if not isinstance(upf, dict):
+        upf = {}
+    capabilities = upf.get("cap_add", [])
+    return [
+        check(
+            "mongodb_kernel_rseq_compatibility",
+            mongo_env.get("GLIBC_TUNABLES") == "glibc.pthread.rseq=1",
+            "MongoDB must explicitly set GLIBC_TUNABLES=glibc.pthread.rseq=1 for the "
+            "Linux kernel compatibility workaround validated on the external VM",
+        ),
+        check(
+            "upf_explicit_root_user",
+            upf.get("user") == "0:0",
+            "UPF must use user 0:0; the image default uid 999 lacked effective TUN capabilities",
+        ),
+        check(
+            "upf_net_admin_capability",
+            isinstance(capabilities, list) and "NET_ADMIN" in capabilities,
+            "UPF must add NET_ADMIN to create ogstun; verify effective capability with "
+            "runtime-preflight on Linux",
+        ),
+        check(
+            "upf_tun_device",
+            exposes_tun_device(upf.get("devices")),
+            "UPF must expose /dev/net/tun at /dev/net/tun with read/write access",
+        ),
+        check(
+            "upf_without_privileged",
+            "privileged" not in upf or upf["privileged"] is False,
+            "UPF must omit privileged or set it false; root + NET_ADMIN + TUN passed the "
+            "isolated external VM TUN test",
+        ),
+    ]
 
 
 def collect_static_ips(services: dict[str, Any]) -> list[str]:

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Any
 
+import pytest
 import yaml
 
 from fiveg_lab.config import validate_repo
@@ -101,3 +103,58 @@ def test_nssf_omission_requires_matching_smf_discovery_metadata(tmp_path: Path) 
     smf_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
     assert "open5gs_2_8_nssf_bypass_mode" in failed_names(repo)
+
+
+@pytest.mark.parametrize(
+    ("service", "field", "value", "expected_failure"),
+    [
+        ("mongodb", "environment", None, "mongodb_kernel_rseq_compatibility"),
+        ("mongodb", "environment", {}, "mongodb_kernel_rseq_compatibility"),
+        (
+            "mongodb",
+            "environment",
+            {"GLIBC_TUNABLES": "glibc.pthread.rseq=0"},
+            "mongodb_kernel_rseq_compatibility",
+        ),
+        ("mongodb", "environment", ["GLIBC_TUNABLES"], "mongodb_kernel_rseq_compatibility"),
+        ("upf", "user", None, "upf_explicit_root_user"),
+        ("upf", "user", "999:999", "upf_explicit_root_user"),
+        ("upf", "cap_add", None, "upf_net_admin_capability"),
+        ("upf", "cap_add", ["SYS_ADMIN"], "upf_net_admin_capability"),
+        ("upf", "cap_add", "NET_ADMIN", "upf_net_admin_capability"),
+        ("upf", "devices", None, "upf_tun_device"),
+        ("upf", "devices", [], "upf_tun_device"),
+        ("upf", "devices", ["/dev/null:/dev/net/tun"], "upf_tun_device"),
+        ("upf", "devices", ["/dev/net/tun:/dev/wrong-tun"], "upf_tun_device"),
+        ("upf", "devices", ["/dev/net/tun:/dev/net/tun:r"], "upf_tun_device"),
+        ("upf", "privileged", True, "upf_without_privileged"),
+        ("upf", "privileged", "false", "upf_without_privileged"),
+    ],
+)
+def test_container_bootstrap_contract_regressions_are_detected(
+    tmp_path: Path, service: str, field: str, value: Any, expected_failure: str
+) -> None:
+    repo = copy_repo(tmp_path)
+    compose_path = repo / "docker-compose.yml"
+    data = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
+    if value is None:
+        data["services"][service].pop(field, None)
+    else:
+        data["services"][service][field] = value
+    compose_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    assert expected_failure in failed_names(repo)
+
+
+def test_equivalent_compose_bootstrap_syntax_passes(tmp_path: Path) -> None:
+    repo = copy_repo(tmp_path)
+    compose_path = repo / "docker-compose.yml"
+    data = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
+    data["services"]["mongodb"]["environment"] = ["GLIBC_TUNABLES=glibc.pthread.rseq=1"]
+    data["services"]["upf"]["devices"] = [
+        {"source": "/dev/net/tun", "target": "/dev/net/tun", "permissions": "rw"}
+    ]
+    data["services"]["upf"]["privileged"] = False
+    compose_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    assert not failed_names(repo)

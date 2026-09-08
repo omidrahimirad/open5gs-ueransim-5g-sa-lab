@@ -15,6 +15,10 @@ services:
     image: ${MONGODB_IMAGE:-mongo:8.3.8-noble}
     container_name: open5gs-mongodb
     restart: unless-stopped
+    # Linux >=6.19/kernel 7.0 startup workaround validated on the external VM.
+    # This is MongoDB/glibc compatibility, not an Open5GS application requirement.
+    environment:
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
     volumes:
       - mongodb-data:/data/db
     networks:
@@ -157,7 +161,9 @@ services:
     restart: unless-stopped
     # UPF handles N3 GTP-U from gNB and N6 traffic to the data network.
     command: ["open5gs-upfd", "-c", "/opt/open5gs/etc/open5gs/upf.yaml"]
-    privileged: true
+    # The image defaults to uid 999, which lacked effective TUN capabilities.
+    # Root + NET_ADMIN + the TUN device passed the isolated external VM test.
+    user: "0:0"
     cap_add:
       - NET_ADMIN
     devices:

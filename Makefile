@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test check parse-sample compose-check notebook-check clean pre-commit validate-config preflight lab-up lab-status subscriber-add baseline-test lab-down collect-evidence scenario scenario-list scenario-validate capture-start capture-stop coverage
+.PHONY: install lint format typecheck test check parse-sample compose-check notebook-check clean pre-commit validate-config preflight runtime-preflight lab-up lab-status subscriber-add baseline-test lab-down collect-evidence scenario scenario-list scenario-validate capture-start capture-stop coverage
 
 install:
 	uv sync
@@ -26,6 +26,9 @@ validate-config:
 
 preflight:
 	./scripts/preflight.sh
+
+runtime-preflight:
+	uv run 5g-lab runtime-preflight
 
 lab-up: validate-config
 	./scripts/start_lab.sh
