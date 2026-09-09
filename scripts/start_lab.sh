@@ -31,12 +31,17 @@ fi
 log "Starting MongoDB, Open5GS 5GC network functions, and internal DN target."
 docker compose up -d mongodb nrf ausf udm udr pcf amf upf smf dn-server
 
-log "Core services requested. Check health/logs with:"
+log "Waiting for core initialization and a restart-free stability window."
+uv run 5g-lab core-ready --output runtime/core-readiness.json
+
+log "Core readiness passed. Inspect health/logs with:"
 echo "  docker compose ps"
 echo "  docker compose logs -f amf smf upf"
 echo
 log "Provision subscriber before starting RAN/UE:"
 echo "  ./scripts/add_subscriber.sh"
 echo
-log "Then start gNB and UE:"
-echo "  docker compose --profile ran up -d gnb ue"
+log "Then start gNB, verify NG Setup, and only then start UE:"
+echo "  docker compose --profile ran up -d gnb"
+echo "  docker compose logs gnb"
+echo "  docker compose --profile ran up -d ue"

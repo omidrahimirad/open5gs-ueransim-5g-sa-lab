@@ -106,6 +106,8 @@ services:
   udr:
     image: *open5gs-image
     user: "999:999"
+    environment:
+      DB_URI: mongodb://mongodb/open5gs
     container_name: open5gs-udr
     restart: unless-stopped
     command: ["open5gs-udrd", "-c", "/opt/open5gs/etc/open5gs/udr.yaml"]
@@ -127,6 +129,8 @@ services:
   pcf:
     image: *open5gs-image
     user: "999:999"
+    environment:
+      DB_URI: mongodb://mongodb/open5gs
     container_name: open5gs-pcf
     restart: unless-stopped
     command: ["open5gs-pcfd", "-c", "/opt/open5gs/etc/open5gs/pcf.yaml"]
@@ -245,7 +249,10 @@ services:
     profiles: ["ran"]
     restart: unless-stopped
     # gNB connects N2/SCTP to AMF and carries N3/GTP-U toward UPF.
-    command: ["nr-gnb", "-c", "/UERANSIM/config/gnb.yaml"]
+    # The image wrapper expects gnb|ue and rewrites template configurations.
+    # Invoke the binary directly to use this exact read-only mounted config.
+    entrypoint: ["/usr/local/bin/nr-gnb"]
+    command: ["-c", "/UERANSIM/config/gnb.yaml"]
     volumes:
       - ./configs/ueransim/gnb.yaml:/UERANSIM/config/gnb.yaml:ro
     depends_on:
@@ -263,9 +270,13 @@ services:
     container_name: ueransim-ue
     profiles: ["ran"]
     restart: unless-stopped
-    # UE creates a simulated NAS session through the gNB. TUN requires privilege.
-    command: ["nr-ue", "-c", "/UERANSIM/config/ue.yaml"]
-    privileged: true
+    # Use the same direct invocation contract as gNB, preserving the mounted config.
+    entrypoint: ["/usr/local/bin/nr-ue"]
+    command: ["-c", "/UERANSIM/config/ue.yaml"]
+    # UE needs TUN/interface/route administration and writes its container's
+    # /etc/iproute2/rt_tables. No nested network namespace is configured.
+    # This narrower capability set still needs validation on the Linux VM.
+    user: "0:0"
     cap_add:
       - NET_ADMIN
     devices:

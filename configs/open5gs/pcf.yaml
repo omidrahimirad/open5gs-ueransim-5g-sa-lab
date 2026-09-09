@@ -1,3 +1,4 @@
+# DB_URI in Compose must match: Open5GS gives the environment precedence.
 db_uri: mongodb://mongodb/open5gs
 
 logger:

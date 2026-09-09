@@ -30,6 +30,8 @@ LOG_VOLUME = "open5gs-logs"
 LOG_TARGET = "/var/log/open5gs"
 UPF_ENTRYPOINT = ["/bin/sh", "/lab/upf-entrypoint.sh"]
 LOG_INIT_ENTRYPOINT = ["/bin/sh", "/lab/prepare-runtime-logs.sh"]
+LAB_DB_URI = "mongodb://mongodb/open5gs"
+GPRS_TIMER_3_MAX_VALUE = 31
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -94,7 +96,12 @@ def validate_repo(repo_root: Path) -> list[Check]:
             f"services={sorted(service_names)}",
         )
     )
-    checks.extend(validate_open5gs_2_8_policy_and_slice_selection(compose, amf, smf, pcf))
+    checks.extend(
+        validate_open5gs_2_8_policy_and_slice_selection(compose, amf, smf, pcf)
+        + validate_open5gs_startup_contract(
+            compose, amf, pcf, load_yaml(repo_root / "configs/open5gs/udr.yaml")
+        )
+    )
 
     compose_ips = collect_static_ips(services)
     checks.append(
@@ -553,9 +560,7 @@ def validate_open5gs_2_8_policy_and_slice_selection(
     return [
         check(
             "open5gs_2_8_pcf_required_mode",
-            "pcf" in services
-            and pcf_sbi_ip == pcf_ip
-            and pcf_db_uri == "mongodb://mongodb/open5gs",
+            "pcf" in services and pcf_sbi_ip == pcf_ip and pcf_db_uri == LAB_DB_URI,
             "Open5GS 2.8.0 PCF must be present, use the Compose SBI IP, and use lab MongoDB",
         ),
         check(
@@ -565,6 +570,56 @@ def validate_open5gs_2_8_policy_and_slice_selection(
             "S-NSSAI/DNN to NRF",
         ),
     ]
+
+
+def validate_open5gs_startup_contract(
+    compose: dict[str, Any],
+    amf: dict[str, Any],
+    pcf: dict[str, Any],
+    udr: dict[str, Any],
+) -> list[Check]:
+    """Validate pinned 2.8.0 startup inputs; runtime readiness is a separate check."""
+    timer = nested(amf, "amf", "time", "t3512", "value")
+    # v2.8.0 lib/nas/common/conv.c encodes GPRS Timer 3 in these units,
+    # with a five-bit value. AMF additionally rejects an absent/zero timer.
+    timer_units = (2, 30, 60, 600, 3600, 36000, 1152000)
+    timer_ok = (
+        isinstance(timer, int)
+        and not isinstance(timer, bool)
+        and any(
+            timer % unit == 0 and 1 <= timer // unit <= GPRS_TIMER_3_MAX_VALUE
+            for unit in timer_units
+        )
+    )
+    checks = [
+        check(
+            "open5gs_2_8_amf_t3512",
+            timer_ok,
+            "AMF requires a positive integer amf.time.t3512.value in seconds that "
+            "Open5GS 2.8.0 can encode as GPRS Timer 3 (upstream default: 540).",
+        )
+    ]
+    for name, config in (("pcf", pcf), ("udr", udr)):
+        environment = compose_environment(nested(compose, "services", name, "environment"))
+        checks.extend(
+            [
+                check(
+                    f"open5gs_2_8_{name}_db_uri",
+                    config.get("db_uri") == LAB_DB_URI
+                    and "db_uri" not in (nested(config, name) or {}),
+                    f"{name.upper()} requires root-level db_uri={LAB_DB_URI}; "
+                    f"{name}.db_uri is not a supported key.",
+                ),
+                check(
+                    f"open5gs_2_8_{name}_db_environment",
+                    environment.get("DB_URI") == LAB_DB_URI,
+                    f"Compose {name}.environment.DB_URI must explicitly target lab MongoDB; "
+                    "Open5GS gives DB_URI precedence over YAML and the pinned image "
+                    "inherits mongodb://mongo/open5gs.",
+                ),
+            ]
+        )
+    return checks
 
 
 def checks_pass(checks: list[Check]) -> bool:

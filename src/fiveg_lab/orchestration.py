@@ -181,7 +181,7 @@ def blocked_result(
     )
 
 
-def execute_baseline(
+def execute_baseline(  # noqa: PLR0915
     repo_root: Path,
     scenario: Scenario,
     output_dir: Path,
@@ -190,32 +190,93 @@ def execute_baseline(
     fingerprint: str,
     settle_seconds: int,
 ) -> ScenarioResult:
-    outcomes = [
-        run_command(["./scripts/start_lab.sh"], repo_root, scenario.timeout_seconds),
-        run_command(["./scripts/add_subscriber.sh"], repo_root, scenario.timeout_seconds),
-        run_command(
-            ["docker", "compose", "--profile", "ran", "up", "-d", "gnb", "ue"],
-            repo_root,
-            scenario.timeout_seconds,
+    outcomes: list[CommandOutcome] = []
+    assertions: list[AssertionResult] = []
+    evidence_paths: list[Path] = []
+    prior_logs = output_dir / "pre_start_logs"
+    logs_dir = output_dir / "logs"
+    # Preserve the previous attempt before recreating this lab's RAN/UE. Its
+    # lifetime logs are diagnostic evidence only, never assertions for this run.
+    stages = [
+        (
+            ["./scripts/collect_logs.sh"],
+            {"OUT_DIR": str(prior_logs.resolve()), "SINCE": ""},
+        ),
+        (["docker", "compose", "--profile", "ran", "stop", "ue", "gnb"], None),
+        (["./scripts/start_lab.sh"], None),
+        (["./scripts/add_subscriber.sh"], None),
+        (
+            [
+                "docker",
+                "compose",
+                "--profile",
+                "ran",
+                "up",
+                "-d",
+                "--no-deps",
+                "--force-recreate",
+                "gnb",
+            ],
+            None,
         ),
     ]
-    time.sleep(settle_seconds)
-    traffic_path = output_dir / "traffic_result.txt"
-    outcomes.append(
-        run_command(
-            ["./scripts/traffic_test.sh"],
-            repo_root,
-            scenario.timeout_seconds,
-            env={"OUT": str(traffic_path)},
-        )
+    stage_failed = False
+    for args, env in stages:
+        outcome = run_command(args, repo_root, scenario.timeout_seconds, env=env)
+        outcomes.append(outcome)
+        if outcome.returncode != 0:
+            stage_failed = True
+            break
+
+    if not stage_failed:
+        n2_outcomes, n2_ready = wait_for_ng_setup(repo_root, min(30, scenario.timeout_seconds))
+        outcomes.extend(n2_outcomes)
+        assertions.append(n2_ready)
+        n2_path = output_dir / "baseline_initial_ng_setup.json"
+        write_command_log(n2_outcomes, n2_path)
+        evidence_paths.append(n2_path)
+        if n2_ready.status == ResultStatus.PASS:
+            ue = run_command(
+                [
+                    "docker",
+                    "compose",
+                    "--profile",
+                    "ran",
+                    "up",
+                    "-d",
+                    "--no-deps",
+                    "--force-recreate",
+                    "ue",
+                ],
+                repo_root,
+                scenario.timeout_seconds,
+            )
+            outcomes.append(ue)
+            stage_failed = ue.returncode != 0
+            if not stage_failed:
+                time.sleep(max(0, settle_seconds))
+                current = validate_current_baseline(
+                    repo_root, output_dir, min(30, scenario.timeout_seconds)
+                )
+                assertions.extend(current.assertions)
+                outcomes.extend(current.outcomes)
+                evidence_paths.extend(current.evidence_paths)
+
+    collected = run_command(
+        ["./scripts/collect_logs.sh"],
+        repo_root,
+        scenario.timeout_seconds,
+        env={"OUT_DIR": str(logs_dir.resolve()), "SINCE": started_at},
     )
-    outcomes.append(run_command(["./scripts/collect_logs.sh"], repo_root, scenario.timeout_seconds))
-    write_command_log(outcomes, output_dir / "commands.json")
-    events = parse_runtime_events(repo_root, traffic_path)
-    assertions = evaluate_scenario_events(scenario, set(events))
+    outcomes.append(collected)
+    commands_path = output_dir / "commands.json"
+    write_command_log(outcomes, commands_path)
+    traffic_path = output_dir / "baseline_traffic_result.txt"
+    events = parse_runtime_events(repo_root, traffic_path, log_dir=logs_dir)
+    assertions.extend(evaluate_scenario_events(scenario, set(events)))
     status = (
         ResultStatus.ERROR
-        if any(outcome.returncode != 0 for outcome in outcomes)
+        if stage_failed or collected.returncode != 0
         else scenario_status(assertions)
     )
     return ScenarioResult(
@@ -231,8 +292,33 @@ def execute_baseline(
         observed_events=sorted(set(events)),
         assertions=assertions,
         baseline_context_fingerprint=fingerprint,
-        evidence=runtime_evidence(output_dir, traffic_path),
+        evidence=runtime_evidence(
+            output_dir, commands_path, *evidence_paths, *sorted(logs_dir.glob("*.log"))
+        ),
         notes=command_notes(outcomes),
+    )
+
+
+def wait_for_ng_setup(
+    repo_root: Path, timeout: int
+) -> tuple[list[CommandOutcome], AssertionResult]:
+    deadline = time.monotonic() + timeout
+    outcomes: list[CommandOutcome] = []
+    observed = "NG Setup did not become ready before the deadline"
+    while (remaining := deadline - time.monotonic()) > 0:
+        # Each CLI attempt has two commands. Keep individual calls short so
+        # absent/restarting gNB containers cannot stall the bounded wait.
+        attempt = run_ueransim_cli(repo_root, "gnb", "status", min(3, max(1, int(remaining / 2))))
+        outcomes.extend(attempt)
+        current = attempt[-1]
+        observed = current.stdout.strip() or current.stderr.strip() or "no status"
+        if current.returncode == 0 and re.search(r"is-ngap-up:\s*true(?:\s|$)", current.stdout):
+            return outcomes, state_assertion(
+                "baseline:initial_ng_setup", True, "gNB reports is-ngap-up: true", observed
+            )
+        time.sleep(min(1, max(0, deadline - time.monotonic())))
+    return outcomes, state_assertion(
+        "baseline:initial_ng_setup", False, "gNB reports is-ngap-up: true", observed
     )
 
 
@@ -371,13 +457,24 @@ def validate_recovered_baseline(
     output_dir: Path,
     timeout: int,
 ) -> RecoveryValidation:
+    return validate_current_baseline(repo_root, output_dir, timeout, phase="recovery")
+
+
+def validate_current_baseline(
+    repo_root: Path,
+    output_dir: Path,
+    timeout: int,
+    *,
+    phase: str = "baseline",
+) -> RecoveryValidation:
     assertions: list[AssertionResult] = []
     outcomes: list[CommandOutcome] = []
     evidence_paths: list[Path] = []
+    prefix = "post_recovery" if phase == "recovery" else phase
 
     compose_ps = run_command(["docker", "compose", "--profile", "ran", "ps"], repo_root, timeout)
     outcomes.append(compose_ps)
-    compose_ps_path = output_dir / "post_recovery_compose_ps.txt"
+    compose_ps_path = output_dir / f"{prefix}_compose_ps.txt"
     write_outcome(compose_ps, compose_ps_path)
     evidence_paths.append(compose_ps_path)
 
@@ -403,7 +500,7 @@ def validate_recovered_baseline(
             missing_services.append(service)
     assertions.append(
         state_assertion(
-            "recovery:required_lab_services_running",
+            f"{phase}:required_lab_services_running",
             not missing_services,
             "all required 5GC, RAN, UE, and DN services running",
             "all running" if not missing_services else f"missing/not running: {missing_services}",
@@ -412,12 +509,12 @@ def validate_recovered_baseline(
 
     gnb_status = run_ueransim_cli(repo_root, "gnb", "status", timeout)
     outcomes.extend(gnb_status[:2])
-    gnb_status_path = output_dir / "post_recovery_gnb_status.txt"
+    gnb_status_path = output_dir / f"{prefix}_gnb_status.txt"
     write_outcome(gnb_status[-1], gnb_status_path)
     evidence_paths.append(gnb_status_path)
     assertions.append(
         state_assertion(
-            "recovery:n2_ready",
+            f"{phase}:n2_ready",
             gnb_status[-1].returncode == 0
             and bool(re.search(r"is-ngap-up:\s*true", gnb_status[-1].stdout, re.I)),
             "UERANSIM gNB reports is-ngap-up: true",
@@ -427,12 +524,12 @@ def validate_recovered_baseline(
 
     ue_status = run_ueransim_cli(repo_root, "ue", "status", timeout)
     outcomes.extend(ue_status[:2])
-    ue_status_path = output_dir / "post_recovery_ue_status.txt"
+    ue_status_path = output_dir / f"{prefix}_ue_status.txt"
     write_outcome(ue_status[-1], ue_status_path)
     evidence_paths.append(ue_status_path)
     assertions.append(
         state_assertion(
-            "recovery:ue_registered",
+            f"{phase}:ue_registered",
             ue_status[-1].returncode == 0
             and bool(re.search(r"rm-state:\s*RM-REGISTERED", ue_status[-1].stdout, re.I)),
             "UERANSIM UE reports RM-REGISTERED",
@@ -442,12 +539,12 @@ def validate_recovered_baseline(
 
     pdu_status = run_ueransim_cli(repo_root, "ue", "ps-list", timeout)
     outcomes.extend(pdu_status[:2])
-    pdu_status_path = output_dir / "post_recovery_pdu_sessions.txt"
+    pdu_status_path = output_dir / f"{prefix}_pdu_sessions.txt"
     write_outcome(pdu_status[-1], pdu_status_path)
     evidence_paths.append(pdu_status_path)
     assertions.append(
         state_assertion(
-            "recovery:pdu_session_active",
+            f"{phase}:pdu_session_active",
             pdu_status[-1].returncode == 0
             and bool(re.search(r"state:\s*PS-ACTIVE(?:\s|$)", pdu_status[-1].stdout, re.I)),
             "UERANSIM UE reports a PS-ACTIVE PDU session",
@@ -461,19 +558,19 @@ def validate_recovered_baseline(
         timeout,
     )
     outcomes.append(tunnel)
-    tunnel_path = output_dir / "post_recovery_ue_tunnel.txt"
+    tunnel_path = output_dir / f"{prefix}_ue_tunnel.txt"
     write_outcome(tunnel, tunnel_path)
     evidence_paths.append(tunnel_path)
     assertions.append(
         state_assertion(
-            "recovery:ue_tunnel_exists",
+            f"{phase}:ue_tunnel_exists",
             tunnel.returncode == 0 and "uesimtun0" in tunnel.stdout,
             "uesimtun0 exists in the UE container",
             tunnel.stdout.strip() or tunnel.stderr.strip() or "not found",
         )
     )
 
-    traffic_path = output_dir / "recovery_traffic_result.txt"
+    traffic_path = output_dir / f"{phase}_traffic_result.txt"
     traffic = run_command(
         ["./scripts/traffic_test.sh"],
         repo_root,
@@ -484,7 +581,7 @@ def validate_recovered_baseline(
     evidence_paths.append(traffic_path)
     assertions.append(
         state_assertion(
-            "recovery:user_plane_dn_traffic",
+            f"{phase}:user_plane_dn_traffic",
             traffic.returncode == 0
             and traffic_path.exists()
             and "USER_PLANE_SUCCESS" in traffic_path.read_text(encoding="utf-8"),
@@ -493,7 +590,7 @@ def validate_recovered_baseline(
         )
     )
 
-    assertions_path = output_dir / "recovery_assertions.json"
+    assertions_path = output_dir / f"{phase}_assertions.json"
     assertions_path.write_text(
         json.dumps([asdict(assertion) for assertion in assertions], indent=2), encoding="utf-8"
     )
@@ -542,9 +639,9 @@ def state_assertion(name: str, passed: bool, expected: str, observed: str) -> As
         status=ResultStatus.PASS if passed else ResultStatus.FAIL,
         expected=expected,
         observed=observed,
-        detail="Runtime state matched the recovery invariant."
+        detail="Runtime state matched the current baseline invariant."
         if passed
-        else "Runtime state did not match the recovery invariant.",
+        else "Runtime state did not match the current baseline invariant.",
     )
 
 
@@ -599,9 +696,11 @@ def latest_log_dir(logs_root: Path) -> Path | None:
     return sorted(candidates)[-1] if candidates else None
 
 
-def parse_runtime_events(repo_root: Path, *extra_logs: Path) -> list[str]:
+def parse_runtime_events(
+    repo_root: Path, *extra_logs: Path, log_dir: Path | None = None
+) -> list[str]:
     logs_root = repo_root / "runtime" / "logs"
-    latest = latest_log_dir(logs_root) or logs_root
+    latest = log_dir if log_dir is not None else latest_log_dir(logs_root) or logs_root
     # Named-volume NF files can span previous containers/runs. Keep those
     # diagnostic exports out of automated event assertions.
     log_paths = list(latest.glob("*.log"))
