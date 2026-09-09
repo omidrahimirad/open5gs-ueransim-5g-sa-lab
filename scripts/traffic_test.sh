@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-OUT="${OUT:-$ROOT_DIR/logs/traffic_test_result.txt}"
+OUT="${OUT:-$ROOT_DIR/runtime/traffic_test_result.txt}"
+mkdir -p "$(dirname "$OUT")"
 TARGET="${TARGET:-10.46.0.100}"
 COUNT="${COUNT:-5}"
 UE_TUNNEL="${UE_TUNNEL:-uesimtun0}"

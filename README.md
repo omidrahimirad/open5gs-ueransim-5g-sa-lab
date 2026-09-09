@@ -107,7 +107,9 @@ uv run 5g-lab scenario run upf_unavailable --baseline-result reports/runtime/<ba
 
 On macOS/Docker Desktop, runtime scenarios are expected to be blocked or incomplete because SCTP and TUN behavior are host dependent.
 
-Host preflight does not prove that an image's effective user and capabilities can create a TUN interface. `make runtime-preflight` explicitly checks the UPF container TUN operation in isolation on Linux; use `uv run 5g-lab runtime-preflight --mongodb` to include isolated MongoDB startup and ping. These checks require a reachable Linux Docker daemon and locally available configured images matching its native architecture, and are separate from static CI and full baseline validation. See [runtime validation and troubleshooting](docs/runtime_validation.md) and [the user-supplied Linux bootstrap findings](docs/runtime_findings.md).
+Host preflight does not prove container log permissions or UPF bootstrap capability. `make runtime-preflight` prepares the Docker-managed application-log volume, checks writes under every Open5GS NF's effective user, and exercises the actual UPF bootstrap (sysctls, IPv4/IPv6 TUN setup, link state, NAT, and cleanup). Add `--mongodb` via `uv run 5g-lab runtime-preflight --mongodb` for isolated MongoDB startup/ping. These explicit Linux checks are separate from static CI and baseline validation. See [runtime validation and troubleshooting](docs/runtime_validation.md) and [the supplied Linux findings](docs/runtime_findings.md).
+
+Non-UPF NFs run as UID/GID 999 with a prepared named log volume, independent of checkout ownership. Fixtures remain in `logs/`; mutable exports go to ignored `runtime/logs/<UTC>/`. UPF uses root + NET_ADMIN + TUN with Compose-managed sysctls and a repository bootstrap; it does not require `privileged: true` in the proposed configuration. The new logging/bootstrap solution still needs external Linux verification.
 
 ## Engineering Workflow
 
@@ -115,7 +117,7 @@ Host preflight does not prove that an image's effective user and capabilities ca
 make validate-config      # deterministic cross-file config checks
 make preflight            # Linux host capability checks, no host mutation
 docker compose pull upf mongodb  # fetch the configured probe images explicitly
-make runtime-preflight    # isolated UPF container TUN creation and cleanup
+make runtime-preflight    # NF log writes + complete isolated UPF bootstrap/cleanup
 make lab-up               # start core NFs and internal DN target
 make subscriber-add       # idempotent subscriber provisioning path via pinned dbctl helper
 make baseline-test        # run baseline scenario control surface
@@ -208,6 +210,7 @@ diagrams/       Architecture diagram source and SVG
 docs/           Engineering workflow, protocol, runtime, and safety documentation
 evidence/       Placeholder and rules for real Linux runtime evidence
 logs/           Sample logs only
+runtime/        Ignored mutable log exports and traffic output
 reports/        Sample/generated reports and future runtime summaries
 scenarios/      Declarative validation and failure-injection scenarios
 scripts/        Thin operational wrappers
@@ -217,7 +220,7 @@ tests/          Unit and fixture tests; runtime tests are opt-in only
 
 ## Next Step: Linux Runtime Evidence
 
-User-supplied Linux tests identified MongoDB kernel/rseq startup and UPF TUN permission defects; their isolated workaround results are documented in [runtime findings](docs/runtime_findings.md). They do not establish a healthy 5G baseline.
+User-supplied Linux tests identified MongoDB kernel/rseq, log-mount permissions, and UPF TUN/sysctl bootstrap defects; their isolated workaround results are documented in [runtime findings](docs/runtime_findings.md). They do not establish a healthy 5G baseline.
 
 On the external Ubuntu/Linux host, perform a clean Compose teardown, run host and container runtime preflight, start and verify MongoDB/core/UPF, provision the subscriber, verify gNB NG Setup, then verify UE registration/authentication/security/PDU session, `uesimtun0`, and DN traffic. Run and capture `baseline_e2e`, then add curated evidence under `evidence/real_runs/<run_id>/`. Until that exists, keep the public status as **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**.
 

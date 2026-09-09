@@ -17,7 +17,7 @@ uv sync
 make check
 ```
 
-3. Tear down any prior lab containers/networks, then confirm Linux runtime prerequisites. This teardown preserves the MongoDB volume.
+3. Tear down any prior lab containers/networks, then confirm Linux runtime prerequisites. This teardown preserves the MongoDB and application-log volumes; save failed-run evidence first.
 
 ```bash
 make lab-down
@@ -28,9 +28,9 @@ make runtime-preflight
 
 If host preflight reports missing SCTP, load it with `sudo modprobe sctp` on the lab host and rerun preflight. Resolve other reported failures before proceeding. The probes require a reachable Linux Docker daemon and locally available configured images matching its native architecture; image pulls are explicit in the sequence above.
 
-`make runtime-preflight` (equivalently `uv run 5g-lab runtime-preflight`) performs an isolated UPF container TUN check; it does not start the full lab. It uses the resolved Compose UPF image and runtime privilege settings to create and delete a temporary TUN interface. Optional `--mongodb` also starts the configured MongoDB image with its Compose environment and waits for a localhost `mongosh` ping. Each probe has a command timeout (30 seconds for UPF, 90 seconds for MongoDB), followed by bounded cleanup. The temporary containers use no lab networks, lab data volumes, or service dependencies.
+`make runtime-preflight` (equivalently `uv run 5g-lab runtime-preflight`) prepares the actual Docker-managed runtime log volume and verifies temporary file writes using each Open5GS NF's effective user and mount. It then runs the same UPF bootstrap entrypoint used by Compose in an isolated container: sysctl values, IPv4/IPv6 TUN addresses, link state, and optional NAT must all succeed and clean up. It does not launch the UPF daemon or full lab. Optional `--mongodb` also performs isolated MongoDB startup and localhost ping.
 
-The probes use [Compose one-off execution](https://docs.docker.com/reference/cli/docker/compose/run/) with `--no-deps --rm --pull never`. On timeout or interruption, the local Docker/Compose process group is stopped before cleanup. A separate cleanup step attempts [forced container and anonymous-volume removal](https://docs.docker.com/reference/cli/docker/container/rm/) and verifies that the uniquely named probe container is absent. A cleanup failure reports the exact container and removal command; resolve it before continuing.
+The check requires Linux, a reachable Docker daemon, and local images matching its native architecture. Probe containers have no lab networks, ports, service dependencies, or database/subscriber volumes. They share only the configured application-log volume and necessary read-only bootstrap script. Each probe has a bounded runtime (30 seconds; 90 seconds for MongoDB), timeout/interrupt handling, uniquely scoped container removal, and file cleanup after removal. A cleanup failure returns FAIL. The prepared application-log volume and NF logs intentionally persist for lab startup/evidence; probe containers, interfaces, NAT rules, and temporary files must not remain. See the [bootstrap findings](runtime_findings.md) for source evidence and limitations.
 
 To include the MongoDB smoke check, use `uv run 5g-lab runtime-preflight --mongodb` in place of `make runtime-preflight` above.
 
@@ -41,12 +41,12 @@ The direct CLI returns `PASS=0`, `FAIL=1`, or `BLOCKED=2`; use it when automatio
 ```bash
 make lab-up
 docker compose ps
-docker compose logs --tail 100 mongodb upf nrf amf smf
+docker compose logs --tail 100 log-init mongodb upf nrf amf smf
 docker compose exec -T mongodb mongosh --quiet --eval 'db.runCommand({ping:1}).ok'
 docker compose exec -T upf ip link show ogstun
 ```
 
-Confirm MongoDB is healthy, UPF created `ogstun`, and the core functions remain running without startup errors. Continue only when these checks pass.
+Confirm `log-init` exited successfully, non-UPF NFs remain UID/GID 999, MongoDB is healthy, UPF created `ogstun`, and the core functions remain running without startup errors. Continue only when these checks pass.
 
 ```bash
 make subscriber-add
@@ -81,9 +81,10 @@ Runtime scenario exit codes are `PASS=0`, `FAIL=1`, `BLOCKED=2`, `ERROR=3`, and 
 ```bash
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_baseline_e2e"
 mkdir -p "evidence/real_runs/${RUN_ID}"/{logs,pcap}
-uv run python scripts/parse_attach_logs.py logs/*/*.log -o "evidence/real_runs/${RUN_ID}/events.csv"
+LATEST_LOG_DIR="$(find runtime/logs -maxdepth 1 -type d -name '20*T*Z' | sort | tail -n 1)"
+uv run python scripts/parse_attach_logs.py "${LATEST_LOG_DIR}"/*.log -o "evidence/real_runs/${RUN_ID}/events.csv"
 docker compose --profile ran --profile tools ps > "evidence/real_runs/${RUN_ID}/compose_ps.txt"
-cp logs/traffic_test_result.txt "evidence/real_runs/${RUN_ID}/traffic_result.txt"
+cp runtime/traffic_test_result.txt "evidence/real_runs/${RUN_ID}/traffic_result.txt"
 ```
 
 7. Run one fault scenario only after baseline passes.
@@ -111,8 +112,12 @@ The [Linux bootstrap findings](runtime_findings.md) distinguish user-supplied ex
 
 | Symptom | Check and correction |
 | --- | --- |
-| MongoDB exits with a kernel 6.19+ incompatibility message | Keep the pinned `mongo:8.3.8-noble` image and ensure resolved Compose includes `GLIBC_TUNABLES=glibc.pthread.rseq=1` for MongoDB. The user reported a successful isolated ping with this setting on kernel `7.0.0-1011-gcp`; validate Compose startup on the target host. This is a kernel/runtime compatibility setting, not an Open5GS application requirement. |
-| UPF reports `ioctl(TUNSETIFF): Operation not permitted` | Check the effective user and capabilities inside the container. The intended UPF contract is `user: "0:0"`, `NET_ADMIN`, and `/dev/net/tun`, without `privileged: true`. The image's default UID 999 had no effective capabilities in the user's failing test. Run `make runtime-preflight` before retrying startup. |
-| Host preflight passes but container startup fails | Host preflight checks prerequisites such as Linux, SCTP, tools, and TUN availability. It does not execute the UPF image's TUN operation. Container runtime preflight checks that specific operation with the configured image/user/capabilities; full core readiness and baseline validation remain separate steps. |
+| MongoDB exits with a kernel 6.19+ incompatibility message | Keep the pinned `mongo:8.3.8-noble` image and ensure resolved Compose includes `GLIBC_TUNABLES=glibc.pthread.rseq=1` for MongoDB. The user reported a successful isolated ping and healthy Compose MongoDB with this setting on kernel `7.0.0-1011-gcp`; the same-host `rseq=0` control failed. Recheck readiness on the target commit. This is a kernel/runtime compatibility setting, not an Open5GS application requirement. |
+| UPF reports `ioctl(TUNSETIFF): Operation not permitted` | Check the effective user and capabilities inside the container. The intended UPF contract is `user: "0:0"`, `NET_ADMIN`, `/dev/net/tun`, Compose-managed sysctls, and the repository bootstrap, without `privileged: true`. The image's default UID 999 had no effective capabilities in the user's failing test. Run `make runtime-preflight` before retrying startup. |
+| NF cannot open `/var/log/open5gs/<nf>.log` | Inspect `docker compose logs log-init` and the NF effective user. Keep the initialized named-volume mount; do not restore `./logs` bind mounts or run all NFs as root. Runtime preflight tests the actual log volume with each NF user. |
+| UPF cannot write `net.ipv6.conf.all.disable_ipv6` | Ensure the resolved Compose uses `/lab/upf-entrypoint.sh` and all three required sysctls. The image entrypoint writes protected sysctls even if their values are already correct; the repository wrapper verifies Docker-configured values instead. |
+| Host preflight passes but container startup fails | Host preflight checks prerequisites such as Linux, SCTP, tools, and TUN availability. It does not exercise NF log mounts or the full UPF bootstrap. Expanded runtime preflight checks log writability and the configured bootstrap with its real user/capabilities; full core readiness and baseline validation remain separate steps. |
 
 After applying a fix, repeat the clean teardown → host/runtime preflight → core/UPF verification → subscriber → gNB/NG Setup → UE/session/tunnel → DN traffic → `baseline_e2e` sequence. Preserve the failed attempt and new results as distinct, sanitized records. Do not proceed to fault interpretation until the baseline passes.
+
+`make collect-evidence` writes mutable exports to `runtime/logs/<UTC>/`, with NF file logs in `nf-files/`. The scenario parser uses container stdout. Persistent NF files can include earlier attempts and are diagnostic exports only; inspect timestamps before citing them. Sample fixtures in `logs/` are never mounted into containers. The previous `logs/<UTC>/` exports are not deleted, but are no longer selected automatically.

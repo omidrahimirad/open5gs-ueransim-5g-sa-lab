@@ -25,6 +25,11 @@ REQUIRED_NFS = {
     "ue",
     "dn-server",
 }
+OPEN5GS_NFS = ("nrf", "ausf", "udm", "udr", "pcf", "amf", "smf", "upf")
+LOG_VOLUME = "open5gs-logs"
+LOG_TARGET = "/var/log/open5gs"
+UPF_ENTRYPOINT = ["/bin/sh", "/lab/upf-entrypoint.sh"]
+LOG_INIT_ENTRYPOINT = ["/bin/sh", "/lab/prepare-runtime-logs.sh"]
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -252,7 +257,9 @@ def validate_repo(repo_root: Path) -> list[Check]:
     )
 
     checks.extend(validate_image_defaults(compose))
-    checks.extend(validate_container_runtime_contract(compose))
+    checks.extend(
+        validate_container_runtime_contract(compose) + validate_upf_address_alignment(compose, upf)
+    )
     return checks
 
 
@@ -296,35 +303,175 @@ def validate_container_runtime_contract(compose: dict[str, Any]) -> list[Check]:
     if not isinstance(upf, dict):
         upf = {}
     capabilities = upf.get("cap_add", [])
+    return (
+        [
+            check(
+                "mongodb_kernel_rseq_compatibility",
+                mongo_env.get("GLIBC_TUNABLES") == "glibc.pthread.rseq=1",
+                "MongoDB must explicitly set GLIBC_TUNABLES=glibc.pthread.rseq=1 for the "
+                "Linux kernel compatibility workaround validated on the external VM",
+            ),
+            check(
+                "upf_explicit_root_user",
+                upf.get("user") == "0:0",
+                "UPF must use user 0:0; the image default uid 999 lacked effective "
+                "TUN capabilities",
+            ),
+            check(
+                "upf_net_admin_capability",
+                isinstance(capabilities, list) and "NET_ADMIN" in capabilities,
+                "UPF must add NET_ADMIN to create ogstun; verify effective capability with "
+                "runtime-preflight on Linux",
+            ),
+            check(
+                "upf_tun_device",
+                exposes_tun_device(upf.get("devices")),
+                "UPF must expose /dev/net/tun at /dev/net/tun with read/write access",
+            ),
+            check(
+                "upf_without_privileged",
+                "privileged" not in upf or upf["privileged"] is False,
+                "UPF must omit privileged or set it false; root + NET_ADMIN + TUN passed the "
+                "isolated external VM TUN test",
+            ),
+        ]
+        + validate_logging_contract(compose)
+        + validate_upf_bootstrap_contract(upf)
+    )
+
+
+def mount_at(service: Any, target: str) -> dict[str, Any]:
+    volumes = nested(service, "volumes")
+    if not isinstance(volumes, list):
+        return {}
+    for item in volumes:
+        mount = item
+        if isinstance(mount, str):
+            parts = mount.split(":")
+            if len(parts) not in {2, 3}:
+                continue
+            source, destination = parts[:2]
+            mount = {
+                "source": source,
+                "target": destination,
+                "type": "bind" if source.startswith((".", "/", "~")) else "volume",
+                "read_only": bool(parts[2:]) and "ro" in parts[2].split(","),
+            }
+        if isinstance(mount, dict) and mount.get("target") == target:
+            return cast("dict[str, Any]", mount)
+    return {}
+
+
+def readonly_script(service: Any, target: str, filename: str) -> bool:
+    mount = mount_at(service, target)
+    return (
+        mount.get("type") == "bind"
+        and mount.get("read_only") is True
+        and str(mount.get("source", "")).endswith("/scripts/" + filename)
+    )
+
+
+def validate_logging_contract(compose: dict[str, Any]) -> list[Check]:
+    volume = nested(compose, "volumes", LOG_VOLUME)
+    volume = {} if volume is None else volume
+    volume_ok = isinstance(volume, dict) and set(volume) <= {"name"}
+    if isinstance(volume, dict) and "name" in volume:
+        volume_ok = volume_ok and volume["name"] == f"{compose.get('name')}_{LOG_VOLUME}"
+    init = nested(compose, "services", "log-init") or {}
+    checks = [
+        check(
+            "runtime_log_initializer",
+            LOG_VOLUME in (compose.get("volumes") or {})
+            and volume_ok
+            and init.get("user") == "0:0"
+            and init.get("network_mode") == "none"
+            and init.get("read_only") is True
+            and not init.get("privileged", False)
+            and init.get("cap_drop") == ["ALL"]
+            and set(init.get("cap_add", [])) == {"CHOWN", "FOWNER", "DAC_OVERRIDE"}
+            and init.get("entrypoint") == LOG_INIT_ENTRYPOINT
+            and readonly_script(init, LOG_INIT_ENTRYPOINT[1], "prepare_runtime_logs.sh"),
+            "Prepare only the Docker-managed runtime log volume with the scoped root initializer.",
+        )
+    ]
+    for name in ("log-init", *OPEN5GS_NFS):
+        service = nested(compose, "services", name) or {}
+        mount = mount_at(service, LOG_TARGET)
+        ok = mount.get("type") == "volume" and mount.get("source") == LOG_VOLUME
+        ok = ok and not mount.get("read_only", False)
+        if name != "log-init":
+            ok = (
+                ok
+                and nested(service, "depends_on", "log-init", "condition")
+                == "service_completed_successfully"
+            )
+        if name not in {"log-init", "upf"}:
+            ok = ok and service.get("user") == "999:999"
+        checks.append(
+            check(
+                f"{name}_runtime_logs",
+                ok,
+                "Use initialized named logs; non-UPF NFs remain UID/GID 999.",
+            )
+        )
+    return checks
+
+
+def validate_upf_bootstrap_contract(upf: dict[str, Any]) -> list[Check]:
+    sysctls = upf.get("sysctls", {})
+    environment = compose_environment(upf.get("environment"))
     return [
         check(
-            "mongodb_kernel_rseq_compatibility",
-            mongo_env.get("GLIBC_TUNABLES") == "glibc.pthread.rseq=1",
-            "MongoDB must explicitly set GLIBC_TUNABLES=glibc.pthread.rseq=1 for the "
-            "Linux kernel compatibility workaround validated on the external VM",
+            "upf_bootstrap_entrypoint",
+            upf.get("entrypoint") == UPF_ENTRYPOINT
+            and readonly_script(upf, UPF_ENTRYPOINT[1], "upf-entrypoint.sh"),
+            "Use the mounted UPF bootstrap that verifies Docker sysctls instead of writing them.",
         ),
         check(
-            "upf_explicit_root_user",
-            upf.get("user") == "0:0",
-            "UPF must use user 0:0; the image default uid 999 lacked effective TUN capabilities",
+            "upf_bootstrap_sysctls",
+            isinstance(sysctls, dict)
+            and all(
+                str(sysctls.get(key)) == value
+                for key, value in {
+                    "net.ipv4.ip_forward": "1",
+                    "net.ipv6.conf.all.disable_ipv6": "0",
+                    "net.ipv6.conf.default.disable_ipv6": "0",
+                }.items()
+            ),
+            "Compose must configure IPv4 forwarding and enable IPv6 before UPF bootstrap.",
         ),
         check(
-            "upf_net_admin_capability",
-            isinstance(capabilities, list) and "NET_ADMIN" in capabilities,
-            "UPF must add NET_ADMIN to create ogstun; verify effective capability with "
-            "runtime-preflight on Linux",
+            "upf_bootstrap_environment",
+            all(
+                environment.get(key)
+                for key in ("IPV4_TUN_ADDR", "IPV4_TUN_SUBNET", "IPV6_TUN_ADDR")
+            )
+            and environment.get("ENABLE_NAT") in {"true", "false"},
+            "Explicitly configure tunnel addresses, UE subnet, and NAT behavior.",
         ),
+    ]
+
+
+def validate_upf_address_alignment(
+    compose: dict[str, Any], upf_config: dict[str, Any]
+) -> list[Check]:
+    environment = compose_environment(nested(compose, "services", "upf", "environment"))
+    session = list_first(nested(upf_config, "upf", "session"))
+    try:
+        subnet = ipaddress.IPv4Network(str(session.get("subnet")))
+        address = ipaddress.IPv4Interface(str(environment.get("IPV4_TUN_ADDR")))
+        ipaddress.IPv6Interface(str(environment.get("IPV6_TUN_ADDR")))
+        valid = address.network == subnet and str(address.ip) == str(session.get("gateway"))
+        valid = valid and str(environment.get("IPV4_TUN_SUBNET")) == str(subnet)
+    except ValueError:
+        valid = False
+    return [
         check(
-            "upf_tun_device",
-            exposes_tun_device(upf.get("devices")),
-            "UPF must expose /dev/net/tun at /dev/net/tun with read/write access",
-        ),
-        check(
-            "upf_without_privileged",
-            "privileged" not in upf or upf["privileged"] is False,
-            "UPF must omit privileged or set it false; root + NET_ADMIN + TUN passed the "
-            "isolated external VM TUN test",
-        ),
+            "upf_tunnel_address_alignment",
+            valid,
+            "UPF bootstrap IPv4 address/NAT subnet must match the configured UE gateway/pool; "
+            "IPv6 must be valid.",
+        )
     ]
 
 

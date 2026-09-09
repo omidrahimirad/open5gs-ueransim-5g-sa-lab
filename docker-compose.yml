@@ -11,6 +11,20 @@ x-open5gs-image: &open5gs-image ${OPEN5GS_IMAGE:-gradiant/open5gs:2.8.0}
 x-ueransim-image: &ueransim-image ${UERANSIM_IMAGE:-gradiant/ueransim:3.3.0}
 
 services:
+  # Only this one-shot helper changes ownership, and only inside the log volume.
+  log-init:
+    image: *open5gs-image
+    user: "0:0"
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER, DAC_OVERRIDE]
+    security_opt: ["no-new-privileges:true"]
+    entrypoint: ["/bin/sh", "/lab/prepare-runtime-logs.sh"]
+    volumes:
+      - open5gs-logs:/var/log/open5gs
+      - ./scripts/prepare_runtime_logs.sh:/lab/prepare-runtime-logs.sh:ro
+
   mongodb:
     image: ${MONGODB_IMAGE:-mongo:8.3.8-noble}
     container_name: open5gs-mongodb
@@ -32,13 +46,16 @@ services:
 
   nrf:
     image: *open5gs-image
+    user: "999:999"
     container_name: open5gs-nrf
     restart: unless-stopped
     command: ["open5gs-nrfd", "-c", "/opt/open5gs/etc/open5gs/nrf.yaml"]
     volumes:
       - ./configs/open5gs/nrf.yaml:/opt/open5gs/etc/open5gs/nrf.yaml:ro
-      - ./logs:/var/log/open5gs
+      - open5gs-logs:/var/log/open5gs
     depends_on:
+      log-init:
+        condition: service_completed_successfully
       mongodb:
         condition: service_healthy
     networks:
@@ -50,14 +67,18 @@ services:
 
   ausf:
     image: *open5gs-image
+    user: "999:999"
     container_name: open5gs-ausf
     restart: unless-stopped
     command: ["open5gs-ausfd", "-c", "/opt/open5gs/etc/open5gs/ausf.yaml"]
     volumes:
       - ./configs/open5gs/ausf.yaml:/opt/open5gs/etc/open5gs/ausf.yaml:ro
-      - ./logs:/var/log/open5gs
+      - open5gs-logs:/var/log/open5gs
     depends_on:
-      - nrf
+      log-init:
+        condition: service_completed_successfully
+      nrf:
+        condition: service_started
     networks:
       core:
         ipv4_address: 10.45.0.22
@@ -65,14 +86,18 @@ services:
 
   udm:
     image: *open5gs-image
+    user: "999:999"
     container_name: open5gs-udm
     restart: unless-stopped
     command: ["open5gs-udmd", "-c", "/opt/open5gs/etc/open5gs/udm.yaml"]
     volumes:
       - ./configs/open5gs/udm.yaml:/opt/open5gs/etc/open5gs/udm.yaml:ro
-      - ./logs:/var/log/open5gs
+      - open5gs-logs:/var/log/open5gs
     depends_on:
-      - nrf
+      log-init:
+        condition: service_completed_successfully
+      nrf:
+        condition: service_started
     networks:
       core:
         ipv4_address: 10.45.0.23
@@ -80,13 +105,16 @@ services:
 
   udr:
     image: *open5gs-image
+    user: "999:999"
     container_name: open5gs-udr
     restart: unless-stopped
     command: ["open5gs-udrd", "-c", "/opt/open5gs/etc/open5gs/udr.yaml"]
     volumes:
       - ./configs/open5gs/udr.yaml:/opt/open5gs/etc/open5gs/udr.yaml:ro
-      - ./logs:/var/log/open5gs
+      - open5gs-logs:/var/log/open5gs
     depends_on:
+      log-init:
+        condition: service_completed_successfully
       mongodb:
         condition: service_healthy
       nrf:
@@ -98,13 +126,16 @@ services:
 
   pcf:
     image: *open5gs-image
+    user: "999:999"
     container_name: open5gs-pcf
     restart: unless-stopped
     command: ["open5gs-pcfd", "-c", "/opt/open5gs/etc/open5gs/pcf.yaml"]
     volumes:
       - ./configs/open5gs/pcf.yaml:/opt/open5gs/etc/open5gs/pcf.yaml:ro
-      - ./logs:/var/log/open5gs
+      - open5gs-logs:/var/log/open5gs
     depends_on:
+      log-init:
+        condition: service_completed_successfully
       mongodb:
         condition: service_healthy
       nrf:
@@ -116,18 +147,25 @@ services:
 
   amf:
     image: *open5gs-image
+    user: "999:999"
     container_name: open5gs-amf
     restart: unless-stopped
     # AMF terminates N2 NGAP over SCTP from the gNB.
     command: ["open5gs-amfd", "-c", "/opt/open5gs/etc/open5gs/amf.yaml"]
     volumes:
       - ./configs/open5gs/amf.yaml:/opt/open5gs/etc/open5gs/amf.yaml:ro
-      - ./logs:/var/log/open5gs
+      - open5gs-logs:/var/log/open5gs
     depends_on:
-      - nrf
-      - ausf
-      - udm
-      - pcf
+      log-init:
+        condition: service_completed_successfully
+      nrf:
+        condition: service_started
+      ausf:
+        condition: service_started
+      udm:
+        condition: service_started
+      pcf:
+        condition: service_started
     networks:
       core:
         ipv4_address: 10.45.0.20
@@ -137,19 +175,27 @@ services:
 
   smf:
     image: *open5gs-image
+    user: "999:999"
     container_name: open5gs-smf
     restart: unless-stopped
     # SMF controls PDU sessions and programs UPF over N4/PFCP.
     command: ["open5gs-smfd", "-c", "/opt/open5gs/etc/open5gs/smf.yaml"]
     volumes:
       - ./configs/open5gs/smf.yaml:/opt/open5gs/etc/open5gs/smf.yaml:ro
-      - ./logs:/var/log/open5gs
+      - open5gs-logs:/var/log/open5gs
     depends_on:
-      - nrf
-      - udm
-      - udr
-      - upf
-      - pcf
+      log-init:
+        condition: service_completed_successfully
+      nrf:
+        condition: service_started
+      udm:
+        condition: service_started
+      udr:
+        condition: service_started
+      upf:
+        condition: service_started
+      pcf:
+        condition: service_started
     networks:
       core:
         ipv4_address: 10.45.0.21
@@ -161,6 +207,12 @@ services:
     restart: unless-stopped
     # UPF handles N3 GTP-U from gNB and N6 traffic to the data network.
     command: ["open5gs-upfd", "-c", "/opt/open5gs/etc/open5gs/upf.yaml"]
+    entrypoint: ["/bin/sh", "/lab/upf-entrypoint.sh"]
+    environment:
+      IPV4_TUN_SUBNET: 10.45.1.0/24
+      IPV4_TUN_ADDR: 10.45.1.1/24
+      IPV6_TUN_ADDR: cafe::1/64
+      ENABLE_NAT: "true"
     # The image defaults to uid 999, which lacked effective TUN capabilities.
     # Root + NET_ADMIN + the TUN device passed the isolated external VM test.
     user: "0:0"
@@ -170,9 +222,15 @@ services:
       - /dev/net/tun:/dev/net/tun
     sysctls:
       net.ipv4.ip_forward: "1"
+      net.ipv6.conf.all.disable_ipv6: "0"
+      net.ipv6.conf.default.disable_ipv6: "0"
     volumes:
       - ./configs/open5gs/upf.yaml:/opt/open5gs/etc/open5gs/upf.yaml:ro
-      - ./logs:/var/log/open5gs
+      - ./scripts/upf-entrypoint.sh:/lab/upf-entrypoint.sh:ro
+      - open5gs-logs:/var/log/open5gs
+    depends_on:
+      log-init:
+        condition: service_completed_successfully
     networks:
       core:
         ipv4_address: 10.45.0.30
@@ -190,7 +248,6 @@ services:
     command: ["nr-gnb", "-c", "/UERANSIM/config/gnb.yaml"]
     volumes:
       - ./configs/ueransim/gnb.yaml:/UERANSIM/config/gnb.yaml:ro
-      - ./logs:/UERANSIM/logs
     depends_on:
       - amf
       - upf
@@ -215,7 +272,6 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./configs/ueransim/ue.yaml:/UERANSIM/config/ue.yaml:ro
-      - ./logs:/UERANSIM/logs
     depends_on:
       - gnb
     networks:
@@ -270,4 +326,5 @@ networks:
         - subnet: 10.46.0.0/24
 
 volumes:
+  open5gs-logs:
   mongodb-data:

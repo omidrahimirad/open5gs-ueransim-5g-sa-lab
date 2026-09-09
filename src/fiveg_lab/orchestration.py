@@ -600,7 +600,11 @@ def latest_log_dir(logs_root: Path) -> Path | None:
 
 
 def parse_runtime_events(repo_root: Path, *extra_logs: Path) -> list[str]:
-    log_paths = list((latest_log_dir(repo_root / "logs") or (repo_root / "logs")).glob("*.log"))
+    logs_root = repo_root / "runtime" / "logs"
+    latest = latest_log_dir(logs_root) or logs_root
+    # Named-volume NF files can span previous containers/runs. Keep those
+    # diagnostic exports out of automated event assertions.
+    log_paths = list(latest.glob("*.log"))
     log_paths.extend(path for path in extra_logs if path.exists())
     return [event.event for path in log_paths for event in parse_file(path)]
 

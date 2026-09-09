@@ -19,7 +19,7 @@ def copy_repo(tmp_path: Path) -> Path:
         REPO_ROOT,
         target,
         ignore=shutil.ignore_patterns(
-            ".git", ".venv", ".mypy_cache", ".pytest_cache", ".ruff_cache"
+            ".git", ".venv", ".mypy_cache", ".pytest_cache", ".ruff_cache", "runtime"
         ),
     )
     return target

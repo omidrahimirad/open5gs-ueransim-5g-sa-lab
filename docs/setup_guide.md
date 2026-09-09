@@ -71,7 +71,7 @@ docker compose logs -f gnb ue amf smf
 uv run python scripts/parse_attach_logs.py logs/*sample.txt -o logs/parsed_attach_events.csv
 ```
 
-For a real run, parse timestamped logs from `logs/<timestamp>/`.
+For a real run, parse timestamped logs from `runtime/logs/<timestamp>/`.
 Follow `docs/real_run_evidence_guide.md` before updating reports or claiming runtime validation.
 
 Scenario tooling:

@@ -13,11 +13,20 @@ from pathlib import Path
 from types import FrameType
 from typing import Any
 
-from fiveg_lab.config import validate_container_runtime_contract
+from fiveg_lab.config import (
+    LOG_TARGET,
+    LOG_VOLUME,
+    OPEN5GS_NFS,
+    load_yaml,
+    mount_at,
+    validate_container_runtime_contract,
+    validate_upf_address_alignment,
+)
 from fiveg_lab.models import CheckStatus, ResultStatus
 
 # Copy the resolved service's process/capability settings, but never its lab
-# networks, ports, dependencies, container name, or persistent/config volumes.
+# networks, ports, dependencies, container name, or subscriber/config volumes.
+# The actual runtime log volume is attached explicitly below.
 PROBE_SETTINGS = (
     "image",
     "platform",
@@ -33,21 +42,18 @@ PROBE_SETTINGS = (
     "read_only",
     "environment",
 )
-TUN_SCRIPT = """set -eu
-cleanup() { ip link del labchecktun 2>/dev/null || true; }
-trap cleanup EXIT
+LOG_SCRIPT = """set -eu
+probe_file="/var/log/open5gs/$PROBE_FILE"
+trap 'rm -f -- "$probe_file"' EXIT
 trap 'exit 1' INT TERM
 id
-grep '^CapEff:' /proc/self/status
-ip tuntap add dev labchecktun mode tun
-ip link show labchecktun
-ip link del labchecktun
-if ip link show labchecktun >/dev/null 2>&1; then
-    echo 'TUN cleanup failed' >&2
-    exit 1
-fi
+[ -w "/var/log/open5gs/$NF_LOG_FILE" ]
+(umask 077; set -C; : > "$probe_file")
+printf '%s\\n' runtime-write-check > "$probe_file"
+rm -- "$probe_file"
+[ ! -e "$probe_file" ]
 trap - EXIT
-echo NET_ADMIN_TUN_PASS
+echo RUNTIME_LOG_WRITE_PASS
 """
 MONGO_SCRIPT = """set -eu
 docker-entrypoint.sh mongod --bind_ip 127.0.0.1 &
@@ -155,6 +161,9 @@ def run_runtime_preflight(repo_root: Path, *, mongodb: bool = False) -> list[Cap
     try:
         compose = json.loads(resolved.stdout)
         contract = validate_container_runtime_contract(compose)
+        contract += validate_upf_address_alignment(
+            compose, load_yaml(repo_root / "configs/open5gs/upf.yaml")
+        )
         services = compose["services"]
     except (ValueError, KeyError, TypeError) as error:
         return [CapabilityCheck("resolved_compose", ResultStatus.FAIL, str(error))]
@@ -165,7 +174,9 @@ def run_runtime_preflight(repo_root: Path, *, mongodb: bool = False) -> list[Cap
     ]
     if failures:
         return failures
-    names = ["upf", "mongodb"] if mongodb else ["upf"]
+    names = ["log-init", *OPEN5GS_NFS]
+    if mongodb:
+        names.append("mongodb")
     checks = [environment]
     for name in names:
         image = str(services[name]["image"])
@@ -185,11 +196,36 @@ def run_runtime_preflight(repo_root: Path, *, mongodb: bool = False) -> list[Cap
             )
         else:
             checks.append(CapabilityCheck(f"{name}_image", ResultStatus.PASS, f"{image}: {detail}"))
-    if capability_status(checks) == ResultStatus.PASS:
-        for name in names:
-            checks.extend(run_probe(repo_root, name, services[name]))
-            if capability_status(checks) != ResultStatus.PASS:
-                break
+    if capability_status(checks) != ResultStatus.PASS:
+        return checks
+    volume_name = compose["volumes"][LOG_VOLUME]["name"]
+    prepared = execute(
+        [
+            "docker",
+            "volume",
+            "create",
+            "--label",
+            f"com.docker.compose.project={compose['name']}",
+            "--label",
+            f"com.docker.compose.volume={LOG_VOLUME}",
+            volume_name,
+        ],
+        repo_root,
+    )
+    checks.append(
+        CapabilityCheck(
+            "runtime_log_volume",
+            ResultStatus.PASS if prepared.returncode == 0 else ResultStatus.FAIL,
+            f"Persistent lab log volume (retained): {volume_name}\n{output_text(prepared)}",
+        )
+    )
+    plan = [("log-init", "init"), *((name, "logs") for name in OPEN5GS_NFS), ("upf", "bootstrap")]
+    if mongodb:
+        plan.append(("mongodb", "mongo"))
+    for name, role in plan:
+        if capability_status(checks) != ResultStatus.PASS:
+            break
+        checks.extend(run_probe(repo_root, name, services[name], role, volume_name))
     return checks
 
 
@@ -197,66 +233,116 @@ def interrupt_probe(_signum: int, _frame: FrameType | None) -> None:
     raise KeyboardInterrupt
 
 
-def run_probe(repo_root: Path, service: str, settings: dict[str, Any]) -> list[CapabilityCheck]:
-    name = f"open5gs-runtime-preflight-{uuid.uuid4().hex}"
-    marker = "NET_ADMIN_TUN_PASS" if service == "upf" else "MONGODB_PING_PASS"
-    script = TUN_SCRIPT if service == "upf" else MONGO_SCRIPT
+def probe_service(
+    settings: dict[str, Any], role: str, service: str, name: str
+) -> tuple[dict[str, Any], str]:
     probe = {key: settings[key] for key in PROBE_SETTINGS if key in settings}
     probe.update({"network_mode": "none", "restart": "no", "healthcheck": {"disable": True}})
+    if role == "mongo":
+        probe.update({"entrypoint": ["/bin/sh"], "command": ["-ec", MONGO_SCRIPT]})
+        return probe, "MONGODB_PING_PASS"
+    # Reuse only the actual log volume and the exact read-only bootstrap script.
+    # No subscriber/config volumes, service ports, or lab networks enter a probe.
+    mounts = [mount_at(settings, LOG_TARGET)]
+    if role in {"init", "bootstrap"}:
+        target = settings["entrypoint"][1]
+        mounts.append(mount_at(settings, target))
+        probe["entrypoint"] = settings["entrypoint"]
+        probe["command"] = [] if role == "init" else ["--check"]
+        marker = "LOG_DIRECTORY_READY" if role == "init" else "UPF_BOOTSTRAP_PASS"
+    else:
+        probe["entrypoint"] = ["/bin/sh"]
+        probe["command"] = ["-ec", LOG_SCRIPT]
+        probe["environment"] = dict(probe.get("environment", {})) | {
+            "PROBE_FILE": name,
+            "NF_LOG_FILE": f"{service}.log",
+        }
+        marker = "RUNTIME_LOG_WRITE_PASS"
+    probe["volumes"] = mounts
+    return probe, marker
+
+
+def run_probe(
+    repo_root: Path, service: str, settings: dict[str, Any], role: str, volume_name: str
+) -> list[CapabilityCheck]:
+    name = f"open5gs-runtime-preflight-{uuid.uuid4().hex}"
+    probe, marker = probe_service(settings, role, service, name)
     checks: list[CapabilityCheck] = []
     with tempfile.TemporaryDirectory(prefix="5g-lab-runtime-preflight-") as directory:
         path = Path(directory) / "compose.json"
-        path.write_text(json.dumps({"services": {"probe": probe}}), encoding="utf-8")
+        document = {"services": {"probe": probe}}
+        if role != "mongo":
+            document["volumes"] = {LOG_VOLUME: {"external": True, "name": volume_name}}
+        # Resolved Compose values must not undergo a second environment expansion.
+        path.write_text(json.dumps(document).replace("$", "$$"), encoding="utf-8")
+        prefix = [
+            "docker",
+            "compose",
+            "-p",
+            name,
+            "-f",
+            str(path),
+            "run",
+            "--rm",
+            "--no-deps",
+            "--pull",
+            "never",
+            "-T",
+        ]
         previous = signal.signal(signal.SIGTERM, interrupt_probe)
         try:
             result = execute(
-                [
-                    "docker",
-                    "compose",
-                    "-p",
-                    name,
-                    "-f",
-                    str(path),
-                    "run",
-                    "--rm",
-                    "--no-deps",
-                    "--pull",
-                    "never",
-                    "-T",
-                    "--name",
-                    name,
-                    "--entrypoint",
-                    "/bin/sh",
-                    "probe",
-                    "-ec",
-                    script,
-                ],
-                repo_root,
-                timeout=90 if service == "mongodb" else 30,
+                prefix + ["--name", name, "probe"], repo_root, timeout=90 if role == "mongo" else 30
             )
             passed = result.returncode == 0 and marker in result.stdout.splitlines()
             checks.append(
                 CapabilityCheck(
-                    f"{service}_capability",
+                    f"{service}_{role}",
                     ResultStatus.PASS if passed else ResultStatus.FAIL,
                     f"container={name}; exit={result.returncode}\n{output_text(result)}",
                 )
             )
         except KeyboardInterrupt:
-            checks.append(
-                CapabilityCheck(f"{service}_capability", ResultStatus.FAIL, "Interrupted")
-            )
+            checks.append(CapabilityCheck(f"{service}_{role}", ResultStatus.FAIL, "Interrupted"))
         finally:
-            # A failed/timed-out Docker CLI can leave its container running.
-            # Ignore repeat interrupts only while bounded cleanup is attempted.
             old_int = signal.signal(signal.SIGINT, signal.SIG_IGN)
             signal.signal(signal.SIGTERM, signal.SIG_IGN)
             try:
                 checks.append(cleanup_probe(repo_root, name))
+                if role == "logs":
+                    checks.extend(cleanup_log_file(repo_root, prefix, name))
             finally:
                 signal.signal(signal.SIGINT, old_int)
                 signal.signal(signal.SIGTERM, previous)
     return checks
+
+
+def cleanup_log_file(repo_root: Path, prefix: list[str], name: str) -> list[CapabilityCheck]:
+    # SIGKILL cannot run the container shell trap. Use the same effective user
+    # and log mount to remove only this probe's unique file after container removal.
+    cleanup_name = name + "-cleanup"
+    filename = f"{LOG_TARGET}/{name}"
+    result = execute(
+        prefix
+        + [
+            "--name",
+            cleanup_name,
+            "--entrypoint",
+            "/bin/sh",
+            "probe",
+            "-ec",
+            f"rm -f -- {filename} && test ! -e {filename} && test ! -L {filename}",
+        ],
+        repo_root,
+    )
+    return [
+        CapabilityCheck(
+            "probe_file_cleanup",
+            ResultStatus.PASS if result.returncode == 0 else ResultStatus.FAIL,
+            f"file={filename}; exit={result.returncode}\n{output_text(result)}",
+        ),
+        cleanup_probe(repo_root, cleanup_name),
+    ]
 
 
 def cleanup_probe(repo_root: Path, name: str) -> CapabilityCheck:

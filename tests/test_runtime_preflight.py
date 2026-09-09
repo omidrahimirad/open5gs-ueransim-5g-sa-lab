@@ -13,7 +13,7 @@ from pytest import CaptureFixture, MonkeyPatch
 
 from fiveg_lab import runtime_preflight as rp
 from fiveg_lab.cli import main
-from fiveg_lab.config import load_yaml
+from fiveg_lab.config import LOG_VOLUME, OPEN5GS_NFS, UPF_ENTRYPOINT, load_yaml
 from fiveg_lab.models import ResultStatus
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -24,12 +24,18 @@ class FakeDocker:
 
     def __init__(self) -> None:
         self.compose = load_yaml(REPO_ROOT / "docker-compose.yml")
-        self.compose["services"]["upf"]["image"] = "example/open5gs:configured"
+        for name in ("log-init", *OPEN5GS_NFS):
+            self.compose["services"][name]["image"] = "example/open5gs:configured"
+        self.compose["volumes"][LOG_VOLUME] = {"name": f"{self.compose['name']}_{LOG_VOLUME}"}
         self.compose["services"]["mongodb"]["image"] = "mongo:8.3.8-noble"
         self.calls: list[list[str]] = []
         self.probes: list[dict[str, Any]] = []
         self.paths: list[Path] = []
-        self.upf_result = (0, "NET_ADMIN_TUN_PASS\n", "")
+        self.upf_result = (0, "UPF_BOOTSTRAP_PASS\n", "")
+        self.log_result = (0, "RUNTIME_LOG_WRITE_PASS\n", "")
+        self.init_result = (0, "LOG_DIRECTORY_READY\n", "")
+        self.file_cleanup_ok = True
+        self.interrupt_logs = False
         self.mongo_result = (0, "MONGODB_PING_PASS\n", "")
         self.daemon_ok = True
         self.compose_ok = True
@@ -61,13 +67,9 @@ class FakeDocker:
             if not self.image_ok:
                 result = (1, "", "No such image")
         elif args[1] == "compose" and "run" in args:
-            path = Path(args[args.index("-f") + 1])
-            self.paths.append(path)
-            probe = json.loads(path.read_text())["services"]["probe"]
-            self.probes.append(probe)
-            if self.interrupt:
-                raise KeyboardInterrupt
-            result = self.mongo_result if probe["image"].startswith("mongo:") else self.upf_result
+            result = self.probe_result(args)
+        elif args[1:3] == ["volume", "create"]:
+            result = (0, args[-1], "")
         elif args[1] == "rm":
             result = (1, "", "No such container")
         elif args[1] == "ps":
@@ -79,6 +81,25 @@ class FakeDocker:
         else:
             pytest.fail(f"Unexpected command: {args}")
         return subprocess.CompletedProcess(args, *result)
+
+    def probe_result(self, args: list[str]) -> tuple[int, str, str]:
+        path = Path(args[args.index("-f") + 1])
+        self.paths.append(path)
+        probe = json.loads(path.read_text().replace("$$", "$"))["services"]["probe"]
+        if args[args.index("--name") + 1].endswith("-cleanup"):
+            return (0, "", "") if self.file_cleanup_ok else (1, "", "file unlink denied")
+        self.probes.append(probe)
+        if self.interrupt:
+            raise KeyboardInterrupt
+        if self.interrupt_logs and probe.get("environment", {}).get("PROBE_FILE"):
+            raise KeyboardInterrupt
+        if probe["command"] == []:
+            return self.init_result
+        if probe["command"] == ["--check"]:
+            return self.upf_result
+        if probe["image"].startswith("mongo:"):
+            return self.mongo_result
+        return self.log_result
 
 
 @pytest.fixture
@@ -138,18 +159,23 @@ def test_tun_probe_preserves_privileges_without_lab_resources(docker: FakeDocker
     original_handlers = (signal.getsignal(signal.SIGINT), signal.getsignal(signal.SIGTERM))
     checks = rp.run_runtime_preflight(REPO_ROOT)
     assert rp.capability_status(checks) == ResultStatus.PASS
-    probe = docker.probes[0]
+    probe = next(item for item in docker.probes if item["command"] == ["--check"])
     for field in ("image", "user", "cap_add", "cap_drop", "devices", "security_opt", "sysctls"):
         assert probe[field] == upf[field]
     assert probe["network_mode"] == "none"
-    assert not set(probe) & {"volumes", "ports", "networks", "depends_on", "container_name"}
+    assert not set(probe) & {"ports", "networks", "depends_on", "container_name"}
+    assert probe["entrypoint"] == UPF_ENTRYPOINT
+    assert {item["target"] for item in probe["volumes"]} == {
+        "/var/log/open5gs",
+        "/lab/upf-entrypoint.sh",
+    }
     assert not probe.get("privileged", False)
     run = next(command for command in docker.calls if "run" in command)
     assert "--rm" in run and "--no-deps" in run
     assert run[run.index("--pull") + 1] == "never"
     name = run[run.index("--name") + 1]
     assert ["docker", "rm", "--force", "--volumes", name] in docker.calls
-    assert docker.calls[-1][-1] == f"name=^/{name}$"
+    assert any(command[-1] == f"name=^/{name}$" for command in docker.calls)
     assert all(not path.exists() for path in docker.paths)
     assert original_handlers == (signal.getsignal(signal.SIGINT), signal.getsignal(signal.SIGTERM))
 
@@ -168,12 +194,12 @@ def test_tun_failure_is_reported_and_cleanup_runs(
     docker.upf_result = outcome
     checks = rp.run_runtime_preflight(REPO_ROOT, mongodb=True)
     assert rp.capability_status(checks) == ResultStatus.FAIL
-    capability = next(check for check in checks if check.name == "upf_capability")
+    capability = next(check for check in checks if check.name == "upf_bootstrap")
     assert capability.status == ResultStatus.FAIL
     assert (outcome[2] or outcome[1]) in capability.detail
     assert checks[-1].name == "probe_cleanup"
     assert checks[-1].status == ResultStatus.PASS
-    assert len(docker.probes) == 1  # Stop before MongoDB after a failed UPF check.
+    assert not any(probe["image"].startswith("mongo:") for probe in docker.probes)
 
 
 @pytest.mark.parametrize("state", ["present", "unknown"])
@@ -204,7 +230,7 @@ def test_optional_mongodb_smoke_uses_configured_environment_and_isolated_data(
         docker.mongo_result = (1, "", "MongoDB exited before readiness")
     checks = rp.run_runtime_preflight(REPO_ROOT, mongodb=True)
     assert rp.capability_status(checks) == (ResultStatus.PASS if healthy else ResultStatus.FAIL)
-    mongo = docker.probes[1]
+    mongo = docker.probes[-1]
     assert mongo["environment"] == docker.compose["services"]["mongodb"]["environment"]
     assert mongo["image"] == "mongo:8.3.8-noble"
     assert "volumes" not in mongo and "networks" not in mongo and "ports" not in mongo
@@ -221,6 +247,65 @@ def test_cli_reports_capability_failure_without_claiming_baseline(
     output = capsys.readouterr().out
     assert "Operation not permitted" in output
     assert "not baseline validation" in output
+
+
+@pytest.mark.parametrize("failure", ["write", "cleanup", "interrupt", "init"])
+def test_runtime_log_probe_failure_blocks_bootstrap_and_checks_file_cleanup(
+    docker: FakeDocker, failure: str
+) -> None:
+    if failure == "write":
+        docker.log_result = (1, "uid=999(open5gs)", "touch: Permission denied")
+    elif failure == "cleanup":
+        docker.file_cleanup_ok = False
+    elif failure == "interrupt":
+        docker.interrupt_logs = True
+    else:
+        docker.init_result = (1, "", "chown: Operation not permitted")
+    checks = rp.run_runtime_preflight(REPO_ROOT)
+    assert rp.capability_status(checks) == ResultStatus.FAIL
+    assert not any(probe["command"] == ["--check"] for probe in docker.probes)
+    if failure != "init":
+        assert any(check.name == "probe_file_cleanup" for check in checks)
+        assert any(
+            "--name" in args and args[args.index("--name") + 1].endswith("-cleanup")
+            for args in docker.calls
+        )
+
+
+def test_logging_probe_uses_actual_mount_and_effective_user_for_every_nf(
+    docker: FakeDocker,
+) -> None:
+    assert rp.capability_status(rp.run_runtime_preflight(REPO_ROOT)) == ResultStatus.PASS
+    logs = [probe for probe in docker.probes if probe.get("environment", {}).get("PROBE_FILE")]
+    assert len(logs) == len(OPEN5GS_NFS)
+    for probe in logs:
+        name = probe["environment"]["NF_LOG_FILE"].removesuffix(".log")
+        assert probe["user"] == docker.compose["services"][name]["user"]
+        assert probe["volumes"] == [
+            {
+                "source": LOG_VOLUME,
+                "target": "/var/log/open5gs",
+                "type": "volume",
+                "read_only": False,
+            }
+        ]
+
+
+def test_old_tun_only_success_marker_cannot_satisfy_bootstrap(docker: FakeDocker) -> None:
+    docker.upf_result = (0, "NET_ADMIN_TUN_PASS\n", "")
+    checks = rp.run_runtime_preflight(REPO_ROOT)
+    assert rp.capability_status(checks) == ResultStatus.FAIL
+
+
+def test_original_sysctl_permission_error_is_preserved(docker: FakeDocker) -> None:
+    docker.upf_result = (
+        255,
+        "Creating ogstun device",
+        "sysctl: permission denied on key net.ipv6.conf.all.disable_ipv6",
+    )
+    checks = rp.run_runtime_preflight(REPO_ROOT)
+    assert rp.capability_status(checks) == ResultStatus.FAIL
+    assert any("sysctl: permission denied" in check.detail for check in checks)
 
 
 def test_timeout_stops_child_process_before_cleanup_and_preserves_output(tmp_path: Path) -> None:
