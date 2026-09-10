@@ -58,6 +58,25 @@ def test_uptime_alone_cannot_pass(failure: str) -> None:
     assert fatal or pending
 
 
+@pytest.mark.parametrize(
+    ("service", "loss", "recovery"),
+    [
+        ("pcf", "NF de-registered", "NF registered [Heartbeat:10s]"),
+        ("udr", "Retry registration with NRF", "NF registered [Heartbeat:10s]"),
+        ("smf", "PFCP de-associated", "PFCP associated"),
+        ("upf", "No Heartbeat from SMF", "PFCP associated"),
+    ],
+)
+def test_later_association_loss_invalidates_historical_success(
+    service: str, loss: str, recovery: str
+) -> None:
+    containers, logs = healthy()
+    logs[service] += "\n" + loss
+    assert rd.core_issues(containers, logs)[1]
+    logs[service] += "\n" + recovery
+    assert rd.core_issues(containers, logs) == ([], [])
+
+
 def clock(monkeypatch: MonkeyPatch) -> list[float]:
     now = [0.0]
     monkeypatch.setattr(rd.time, "monotonic", lambda: now[0])

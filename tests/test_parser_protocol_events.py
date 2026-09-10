@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fiveg_lab.parser import parse_file
+import pytest
+
+from fiveg_lab.parser import classify_events, parse_file
 
 
 def write_log(tmp_path: Path, lines: list[str]) -> Path:
@@ -41,3 +43,22 @@ def test_parser_detects_pfcp_and_user_plane_events(tmp_path: Path) -> None:
 
     assert {"pfcp_association", "pfcp_session_establishment"} <= events
     assert {"user_plane_success", "user_plane_failure"} <= events
+
+
+@pytest.mark.parametrize(
+    ("line", "forbidden"),
+    [
+        ("NG Setup procedure failed", "ng_setup"),
+        ("SCTP connection established", "ng_setup"),
+        ("[ausf] Open5GS initialization failed", "authentication"),
+        ("Security mode reject", "security_mode"),
+        ("[nrf] NF registered", "registration_accept"),
+        ("PDU Session Resource Setup Response failed", "pdu_session_accept"),
+        ("uesimtun0 does not exist", "ue_tunnel_created"),
+        ("ping 100% packet loss", "user_plane_success"),
+    ],
+)
+def test_transport_component_and_negative_logs_cannot_prove_positive_protocol_events(
+    line: str, forbidden: str
+) -> None:
+    assert forbidden not in classify_events(line)

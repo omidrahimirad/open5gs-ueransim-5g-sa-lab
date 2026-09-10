@@ -5,7 +5,9 @@ supi: "imsi-001010000000001"
 mcc: "001"
 mnc: "01"
 protectionScheme: 0
-homeNetworkPublicKey: "5a8d38864820197c3394b92613b20b91633c1bd897119273bf8e4a6f4eec0a650"
+# Public example from UERANSIM v3.3.0 config/open5gs-ue.yaml. The parser requires
+# exactly 64 hex characters when present, including with the null scheme above.
+homeNetworkPublicKey: "5a8d38864820197c3394b92613b20b91633cbd897119273bf8e4a6f4eec0a650"
 homeNetworkPublicKeyId: 1
 routingIndicator: "0000"
 
@@ -55,3 +57,8 @@ ciphering:
   EA1: true
   EA2: true
   EA3: false
+
+# Mandatory in UERANSIM v3.3.0, even for this IPv4/null-SUCI lab configuration.
+integrityMaxRate:
+  uplink: "full"
+  downlink: "full"

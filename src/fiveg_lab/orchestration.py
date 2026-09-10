@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import re
+import signal
 import subprocess
 import time
 from dataclasses import asdict, dataclass
@@ -27,6 +28,7 @@ from fiveg_lab.models import (
 from fiveg_lab.parser import parse_file
 from fiveg_lab.preflight import checks_pass as preflight_checks_pass
 from fiveg_lab.preflight import run_preflight
+from fiveg_lab.runtime_preflight import interrupt_probe, stop_process_group
 from fiveg_lab.scenarios import Scenario
 
 BASELINE_CONTEXT_SCHEMA_VERSION = 1
@@ -668,27 +670,39 @@ def run_command(
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
+    previous_term = signal.signal(signal.SIGTERM, interrupt_probe)
     try:
-        result = subprocess.run(
+        with subprocess.Popen(
             args,
             cwd=cwd,
-            check=False,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout,
             env=merged_env,
-        )
-    except subprocess.TimeoutExpired as exc:
-        stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else exc.stdout
-        return CommandOutcome(
-            args=args,
-            returncode=124,
-            stdout=stdout or "",
-            stderr=f"timeout after {timeout}s",
-        )
-    return CommandOutcome(
-        args=args, returncode=result.returncode, stdout=result.stdout, stderr=result.stderr
-    )
+            start_new_session=True,
+        ) as process:
+            try:
+                stdout, stderr = process.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                # A shell script and the Docker CLI can both leave child processes
+                # running. End their whole session before collecting final output.
+                stop_process_group(process)
+                stdout, stderr = process.communicate()
+                return CommandOutcome(
+                    args=args,
+                    returncode=124,
+                    stdout=stdout,
+                    stderr=f"{stderr}\ntimeout after {timeout}s".strip(),
+                )
+            except BaseException:
+                stop_process_group(process)
+                process.communicate()
+                raise
+            return CommandOutcome(
+                args=args, returncode=process.returncode, stdout=stdout, stderr=stderr
+            )
+    finally:
+        signal.signal(signal.SIGTERM, previous_term)
 
 
 def latest_log_dir(logs_root: Path) -> Path | None:

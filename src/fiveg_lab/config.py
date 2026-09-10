@@ -101,6 +101,7 @@ def validate_repo(repo_root: Path) -> list[Check]:
         + validate_open5gs_startup_contract(
             compose, amf, pcf, load_yaml(repo_root / "configs/open5gs/udr.yaml")
         )
+        + validate_ueransim_ue_startup_contract(ue)
     )
 
     compose_ips = collect_static_ips(services)
@@ -620,6 +621,31 @@ def validate_open5gs_startup_contract(
             ]
         )
     return checks
+
+
+def validate_ueransim_ue_startup_contract(ue: dict[str, Any]) -> list[Check]:
+    """Check the v3.3.0 parser fields exposed by the Linux startup failure."""
+    public_key = ue.get("homeNetworkPublicKey")
+    public_key_ok = "homeNetworkPublicKey" not in ue or (
+        isinstance(public_key, str) and re.fullmatch(r"[0-9a-fA-F]{64}", public_key) is not None
+    )
+    return [
+        check(
+            "ueransim_3_3_home_network_public_key",
+            public_key_ok,
+            "UERANSIM 3.3.0 requires exactly 64 hexadecimal homeNetworkPublicKey "
+            "characters when present, including with protectionScheme=0.",
+        ),
+        check(
+            "ueransim_3_3_integrity_max_rate",
+            all(
+                nested(ue, "integrityMaxRate", direction) in ("full", "64kbps")
+                for direction in ("uplink", "downlink")
+            ),
+            "UERANSIM 3.3.0 requires integrityMaxRate.uplink and .downlink; "
+            "each must be full or 64kbps.",
+        ),
+    ]
 
 
 def checks_pass(checks: list[Check]) -> bool:

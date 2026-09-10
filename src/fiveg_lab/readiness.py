@@ -92,11 +92,25 @@ def core_issues(containers: dict[str, Any], logs: dict[str, str]) -> tuple[list[
                 fatal.append(f"{service}: initialization error in current-process logs")
             if f"{service.upper()} initialize...done" not in output:
                 pending.append(f"{service}: missing initialization success")
-            if service not in {"nrf", "upf"} and "NF registered [Heartbeat:" not in output:
+            if service not in {"nrf", "upf"} and not latest_association_succeeded(
+                output,
+                "NF registered [Heartbeat:",
+                ("NF de-registered", "Retry registration with NRF", "No heartbeat"),
+            ):
                 pending.append(f"{service}: not registered with NRF")
-            if service in {"smf", "upf"} and "PFCP associated" not in output:
+            if service in {"smf", "upf"} and not latest_association_succeeded(
+                output,
+                "PFCP associated",
+                ("PFCP de-associated", "No Heartbeat from"),
+            ):
                 pending.append(f"{service}: PFCP association pending")
     return fatal, pending
+
+
+def latest_association_succeeded(output: str, success: str, failures: tuple[str, ...]) -> bool:
+    # Pinned 2.8.0 state-machine messages: a later loss invalidates an earlier
+    # registration/association, even if the process is still running.
+    return output.rfind(success) > max(output.rfind(failure) for failure in failures)
 
 
 def wait_core_ready(
