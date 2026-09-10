@@ -1,0 +1,12 @@
+{
+  "collected_at": "2026-09-10T14:45:13.186210+00:00",
+  "scenario_id": "baseline_e2e",
+  "git_commit": "c94601398f1009008ff4b779b0c5a510253b9983",
+  "tun_character_device": true,
+  "sctp_loaded": true,
+  "ip_forward": "1",
+  "compose_version": "5.5.1",
+  "os_release": "PRETTY_NAME=\"Ubuntu 24.04.4 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.4 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+  "pcap_enabled": false,
+  "fault_scenarios_executed": []
+}

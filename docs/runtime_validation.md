@@ -112,7 +112,7 @@ Do not update the repository status to runtime validated until the committed evi
 
 ## Bootstrap troubleshooting
 
-The [Linux bootstrap findings](runtime_findings.md) distinguish user-supplied external observations from repository-side static tests and runtime work still pending.
+The [Linux bootstrap findings](runtime_findings.md) distinguish initial user-supplied observations, static tests, failed VM attempts, and the subsequent successful Linux baseline. See the [curated baseline evidence](../evidence/real_runs/20260910T144212150699Z_baseline_e2e/README.md) for the exact executing commit and remaining limits.
 
 | Symptom | Check and correction |
 | --- | --- |

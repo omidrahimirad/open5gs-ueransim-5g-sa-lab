@@ -1,0 +1,43 @@
+{
+  "config_sha256": {
+    "configs/open5gs/amf.yaml": "27bc4a35970e73d4584fc5cbcd9203c3135d13dfd1719cab00d09d45179a2315",
+    "configs/open5gs/ausf.yaml": "1c1aecf935289befbad0c14508020c4dba4de6f4fd96bcc6ba03b8bcee2d5f82",
+    "configs/open5gs/bsf.yaml": "e59ec65a103c165dc066115874b8f3bff58014e682181e7dd7f55ed1d43dd784",
+    "configs/open5gs/nrf.yaml": "f6c27aa9a1fb4882a62a83e0f68b084f9904306860b347b37828d1a4b98d6af1",
+    "configs/open5gs/pcf.yaml": "b86536cc557f6bd4ba949938290d64d1645c109f27290328446e4157502a269d",
+    "configs/open5gs/smf.yaml": "d8c183cfa56f4c6cc6dc8d7a768dc158c0c7320722a494fc5742b6167b442920",
+    "configs/open5gs/udm.yaml": "8c8ef2c54c86cf68be2f9ccc6d468bfa88e1e2531d9d0a0a235258b1c19c5fab",
+    "configs/open5gs/udr.yaml": "78aec010ebc3103890658569fbf8b0a41e616d5561381ac300dd3565eed1b291",
+    "configs/open5gs/upf.yaml": "d87758534218ab584b693bdfa044e12cbc9ba1b2c246a4baac02830c9da547f9",
+    "configs/subscriber_config.yaml": "57c7ba52e947682ad65d814ecec84a8e0860f3905b4444cbc4d638dc7bd1dc4d",
+    "configs/ueransim/gnb.yaml": "7b55b860b7dd721d1a5982ac3c3ab6eac3a7b9e571444a6cdfecd86e9aeae515",
+    "configs/ueransim/ue.yaml": "d4fced330682e73b0631d11b0c5da9a0724e82678b658993e17873d8257ba010",
+    "docker-compose.yml": "eb4ca85220452c8f0b914c93e78c9f94d319aecc9d337105fe047a83b3eeb6fe"
+  },
+  "git_commit": "c94601398f1009008ff4b779b0c5a510253b9983",
+  "host": {
+    "docker_engine": "29.8.0|linux|amd64|7.0.0-1011-gcp",
+    "machine": "x86_64",
+    "node": "omid5g-sa-lab.europe-west3-a.c.verdant-branch-466219-t6.internal",
+    "release": "7.0.0-1011-gcp",
+    "system": "Linux"
+  },
+  "runtime_images": {
+    "amf": "gradiant/open5gs:2.8.0",
+    "ausf": "gradiant/open5gs:2.8.0",
+    "bsf": "gradiant/open5gs:2.8.0",
+    "dn-server": "busybox:1.37.0",
+    "gnb": "gradiant/ueransim:3.3.0",
+    "log-init": "gradiant/open5gs:2.8.0",
+    "mongodb": "mongo:8.3.8-noble",
+    "nrf": "gradiant/open5gs:2.8.0",
+    "open5gs-dbctl": "gradiant/open5gs-dbctl:0.10.3",
+    "pcf": "gradiant/open5gs:2.8.0",
+    "smf": "gradiant/open5gs:2.8.0",
+    "udm": "gradiant/open5gs:2.8.0",
+    "udr": "gradiant/open5gs:2.8.0",
+    "ue": "gradiant/ueransim:3.3.0",
+    "upf": "gradiant/open5gs:2.8.0"
+  },
+  "schema_version": 1
+}

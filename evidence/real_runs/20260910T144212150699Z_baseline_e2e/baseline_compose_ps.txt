@@ -1,0 +1,20 @@
+command: docker compose --profile ran ps
+returncode: 0
+stdout:
+NAME                IMAGE                           COMMAND                  SERVICE         CREATED          STATUS                   PORTS
+open5gs-amf         gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   amf             3 minutes ago    Up 3 minutes             0.0.0.0:38412->38412/sctp, [::]:38412->38412/sctp
+open5gs-ausf        gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   ausf            3 minutes ago    Up 3 minutes
+open5gs-bsf         gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   bsf             3 minutes ago    Up 3 minutes
+open5gs-dbctl       gradiant/open5gs-dbctl:0.10.3   "sleep infinity"         open5gs-dbctl   2 minutes ago    Up 2 minutes             27017/tcp
+open5gs-dn-server   busybox:1.37.0                  "sh -c 'ip route add…"   dn-server       3 minutes ago    Up 3 minutes
+open5gs-mongodb     mongo:8.3.8-noble               "docker-entrypoint.s…"   mongodb         3 minutes ago    Up 3 minutes (healthy)   27017/tcp
+open5gs-nrf         gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   nrf             3 minutes ago    Up 3 minutes             0.0.0.0:7777->7777/tcp, [::]:7777->7777/tcp
+open5gs-pcf         gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   pcf             3 minutes ago    Up 3 minutes
+open5gs-smf         gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   smf             3 minutes ago    Up 3 minutes
+open5gs-udm         gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   udm             3 minutes ago    Up 3 minutes
+open5gs-udr         gradiant/open5gs:2.8.0          "/entrypoint.sh open…"   udr             3 minutes ago    Up 3 minutes
+open5gs-upf         gradiant/open5gs:2.8.0          "/bin/sh /lab/upf-en…"   upf             3 minutes ago    Up 3 minutes
+ueransim-gnb        gradiant/ueransim:3.3.0         "/usr/local/bin/nr-g…"   gnb             22 seconds ago   Up 21 seconds
+ueransim-ue         gradiant/ueransim:3.3.0         "/usr/local/bin/nr-u…"   ue              21 seconds ago   Up 20 seconds
+
+stderr:

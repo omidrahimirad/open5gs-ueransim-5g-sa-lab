@@ -28,4 +28,6 @@ forbidden_events:
 recovery_action: none
 recovery_expectation: Baseline must remain healthy; no recovery action is expected.
 timeout_seconds: 300
-runtime_validated: false
+# Evidence: evidence/real_runs/20260910T144212150699Z_baseline_e2e/
+# Executed at c94601398f1009008ff4b779b0c5a510253b9983 on the documented Linux VM.
+runtime_validated: true

@@ -1,0 +1,6 @@
+open5gs-pcf  | 2026-09-10T14:43:01.306746699Z 09/10 14:43:01.305: [pcf] WARNING: UnRef NF EndPoint(addr) [10.45.0.20:7777] (../src/pcf/npcf-handler.c:150)
+open5gs-pcf  | 2026-09-10T14:43:01.306789644Z 09/10 14:43:01.305: [pcf] INFO: Setup NF EndPoint(addr) [10.45.0.20:7777] (../src/pcf/npcf-handler.c:150)
+open5gs-pcf  | 2026-09-10T14:43:01.520155639Z 09/10 14:43:01.519: [pcf] INFO: Setup NF EndPoint(addr) [10.45.0.21:7777] (../src/pcf/npcf-handler.c:482)
+open5gs-pcf  | 2026-09-10T14:43:01.520201041Z 09/10 14:43:01.520: [sbi] INFO: [77162bea-ad25-41f1-a735-7b7dc9ea776e] Setup NF Instance [type:UDR] (../lib/sbi/path.c:349)
+open5gs-pcf  | 2026-09-10T14:43:01.521997170Z 09/10 14:43:01.521: [sbi] INFO: [76dff2d2-ad25-41f1-8f09-61f35e870706] Setup NF Instance [type:BSF] (../lib/sbi/path.c:349)
+open5gs-pcf  | 2026-09-10T14:43:01.522764278Z 09/10 14:43:01.522: [pcf] INFO: Setup NF EndPoint(addr) [10.45.0.26:7777] (../src/pcf/nbsf-handler.c:125)

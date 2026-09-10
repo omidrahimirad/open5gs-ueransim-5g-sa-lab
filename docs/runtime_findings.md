@@ -4,7 +4,7 @@ Real Linux runtime validation discovered these defects after static and fixture 
 
 ## Evidence source and limits
 
-The runtime observations below were supplied by the user from an external Google Compute Engine VM. They were not re-executed by the repository-editing agent. Registry inspection and local static/fixture tests are identified separately. This document is not a substitute for original runtime artifacts.
+The initial observations through “Expanded runtime preflight and remaining validation” were supplied by the user from an external Google Compute Engine VM. Those sections preserve the findings and validation limits at that time. The later “Direct VM validation” sections record agent-executed SSH validation, with exact executing commits. Registry inspection and local static/fixture tests remain separate from runtime evidence.
 
 | Reported environment | Value |
 | --- | --- |
@@ -66,7 +66,7 @@ Local regression tests use command stubs, temporary filesystem fixtures, and loc
 
 Follow the [runtime validation procedure](runtime_validation.md): clean teardown → host/expanded runtime preflight → MongoDB/core/UPF → subscriber → gNB/NG Setup → UE registration/authentication/security/PDU session → tunnel/DN traffic → `baseline_e2e` → sanitized evidence capture. The user-reported MongoDB and isolated TUN successes do not establish that baseline.
 
-Current claim level remains **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**.
+At that stage the claim level was **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**; see the later direct VM results below.
 
 ## Direct VM validation and additional pinned startup contracts
 
@@ -94,3 +94,11 @@ The follow-up [v3.3.0 UE parser inspection](https://github.com/aligungr/UERANSIM
 At `94272774f25fcda4298fcddbdbd4937c073e1d06`, the corrected UE registered, but PDU establishment did not complete. PCF logged `Try to discover [nbsf-management]`, then `No [nbsf-management:PCF]` and aborted. SMF received an empty SBI reply; UE retransmitted and reported `PAYLOAD_NOT_FORWARDED`. The initial ad hoc state probe mistakenly matched `PS-ACTIVE-PENDING` by substring; the subsequent exact-state probe rejected it. No PDU, tunnel, traffic, or baseline PASS is claimed for this failed attempt. The repository's baseline assertion already requires the exact `PS-ACTIVE` token.
 
 The [pinned PCF SM-data handler](https://github.com/open5gs/open5gs/blob/v2.8.0/src/pcf/nudr-handler.c) unconditionally initiates BSF binding registration after retrieving policy data. The [BSF template](https://github.com/open5gs/open5gs/blob/v2.8.0/configs/open5gs/bsf.yaml.in) supports direct NRF communication. The same deployed image contains `open5gs-bsfd`, verified on the VM. The minimal dependency fix adds that BSF at `10.45.0.26:7777` on the existing core network, with UID/GID 999, the initialized log volume, and no additional privilege or new image. BSF is included in config validation, log initialization/collection/preflight, core startup, and readiness. There are now nine Open5GS NFs; the earlier eight-NF results above describe the earlier commits only.
+
+## Successful Linux baseline
+
+On 2026-09-10, executing commit `c94601398f1009008ff4b779b0c5a510253b9983` passed expanded runtime-preflight including MongoDB, config validation, clean core startup, and a 30-second restart-free readiness window. All nine NFs initialized; PCF/UDR used `mongodb://mongodb/open5gs`; UPF retained both configured ogstun addresses. Subscriber provisioning succeeded through the existing helper path. Actual NG Setup preceded UE startup. UE registered, established an active IPv4 session, created `uesimtun0`, and passed 5/5 interface-bound DN pings.
+
+Only after those prerequisites passed, `baseline_e2e` ran as `20260910T144212150699Z_baseline_e2e` and returned **PASS with all 20 assertions**. The scenario's fresh UE received `10.45.1.3`; its interface-bound DN ping received 5/5 replies with 0% loss. A subsequent core stability check passed with zero restarts, and final inspection confirmed MongoDB healthy, all core/RAN containers running, non-UPF NFs UID/GID 999, and no privileged containers. UPF and UE retained root + NET_ADMIN + TUN access.
+
+The [curated real evidence](../evidence/real_runs/20260910T144212150699Z_baseline_e2e/README.md) includes environment/version/capability/commit metadata, current logs, parser output, state, traffic, scenario results, and bounded readiness results. Earlier attempt failures and baseline teardown/endpoint warnings remain disclosed. No fault/recovery, throughput, IPv6 session, packet-capture, RF, or other-host success is claimed. The later evidence/documentation commit is not the runtime-executing commit. The VM lab was left running; PR #11 was not merged.

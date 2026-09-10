@@ -4,13 +4,13 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![Open5GS](https://img.shields.io/badge/Open5GS-2.8.0-2E7D32)
 ![UERANSIM](https://img.shields.io/badge/UERANSIM-3.3.0-F57C00)
-![Status](https://img.shields.io/badge/Status-static%20%2B%20fixture%20validated%20%7C%20runtime%20pending-yellow)
+![Status](https://img.shields.io/badge/Status-Linux%20baseline%20validated%20%7C%20faults%20pending-green)
 
 Open5GS + UERANSIM lab for 5G SA system integration, deterministic configuration checks, protocol-aware evidence extraction, failure injection, and recovery validation.
 
-This repository is a telecom validation project, not an AI demo and not a production network claim. It models a one-UE 5G SA lab with the 5GC functions required by the selected Open5GS 2.8.0 flow: NRF, AMF, AUSF, UDM, UDR, PCF, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target.
+This repository is a telecom validation project, not an AI demo and not a production network claim. It models a one-UE 5G SA lab with the 5GC functions required by the selected Open5GS 2.8.0 flow: NRF, AMF, AUSF, UDM, UDR, PCF, BSF, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target.
 
-Current claim level: **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**. Sample logs prove the parser and reports; they do not prove that this host completed real UE registration or PDU session establishment.
+Current claim level: **STATIC + FIXTURE VALIDATED / ONE-UE LINUX BASELINE VERIFIED**. On 2026-09-10, `baseline_e2e` passed on the Google Cloud Linux VM at commit `c94601398f1009008ff4b779b0c5a510253b9983`. [Collected evidence](evidence/real_runs/20260910T144212150699Z_baseline_e2e/README.md) proves NG Setup, UE registration, an active IPv4 PDU session, `uesimtun0`, and interface-bound DN traffic. Fault impact/recovery, throughput, IPv6 sessions, and other hosts remain unvalidated. Sample logs remain fixture evidence only.
 
 ## Why It Exists
 
@@ -34,11 +34,11 @@ Mermaid source: [diagrams/5g_sa_lab_architecture.md](diagrams/5g_sa_lab_architec
 | Area | Components | Interfaces |
 | --- | --- | --- |
 | RAN/UE simulation | UERANSIM UE, UERANSIM gNB | N1 NAS via gNB, N2 NGAP/SCTP, N3 GTP-U |
-| 5G Core control plane | NRF, AMF, AUSF, UDM, UDR, PCF, SMF | SBI, policy control, N11-style AMF/SMF service interaction |
+| 5G Core control plane | NRF, AMF, AUSF, UDM, UDR, PCF, BSF, SMF | SBI, policy control, N11-style AMF/SMF service interaction |
 | User plane | UPF, internal DN server | N4 PFCP, N6 data-network path |
 | Evidence tooling | parser, scenarios, assertions, reports | logs, optional pcap metadata, JSON/Markdown results |
 
-PCF is included because Open5GS 2.8.0 invokes AM and SM policy-control services during the selected registration/session paths. NSSF is intentionally omitted: the SMF advertises this lab's exact S-NSSAI and DNN to NRF, so AMF can select it directly; the validator fails if that direct-selection contract drifts. This is a version-specific topology decision, not a general claim that NSSF is unnecessary.
+PCF is included because Open5GS 2.8.0 invokes AM and SM policy-control services during the selected registration/session paths. BSF provides the session-binding registration required by that PCF implementation. NSSF is intentionally omitted: the SMF advertises this lab's exact S-NSSAI and DNN to NRF, so AMF can select it directly; the validator fails if that direct-selection contract drifts. This is a version-specific topology decision, not a general claim that NSSF is unnecessary.
 
 ## Validation Layers
 
@@ -46,7 +46,7 @@ PCF is included because Open5GS 2.8.0 invokes AM and SM policy-control services 
 | --- | --- | --- |
 | STATIC VERIFIED | Compose renders, YAML/config consistency passes, scenario schemas validate, scripts parse. | Implemented |
 | FIXTURE VERIFIED | Parser, scenario assertions, reporting, and safety logic pass using sample/synthetic evidence. | Implemented |
-| RUNTIME VERIFIED | Real Open5GS/UERANSIM execution on Linux proves NG setup, registration, PDU session, UE tunnel, traffic, fault impact, and recovery. | Pending |
+| RUNTIME VERIFIED | Real Linux execution proves the specific behavior recorded in each scenario result. | One-UE baseline passed; fault impact/recovery pending |
 
 CI intentionally covers static and fixture validation only. It does not claim real 5G runtime success.
 
@@ -54,7 +54,7 @@ CI intentionally covers static and fixture validation only. It does not claim re
 
 | ID | Fault domain | Expected registration | Expected PDU session | Expected user plane | Recovery expected | Runtime validated |
 | --- | --- | --- | --- | --- | --- | --- |
-| `baseline_e2e` | Healthy baseline | Accept | Accept | DN traffic succeeds through UE tunnel | N/A | No |
+| `baseline_e2e` | Healthy baseline | Accept | Accept | DN traffic succeeds through UE tunnel | N/A | Yes, Linux / `c946013` |
 | `invalid_subscriber_key` | Authentication | Reject/fail | Not established | Unavailable | Restore key/OPc and baseline | No |
 | `unknown_subscriber` | Subscriber | Reject/fail | Not established | Unavailable | Restore SUPI/DB record and baseline | No |
 | `dnn_mismatch` | Session management | May accept | Reject/fail | Unavailable | Restore DNN and baseline | No |
@@ -109,7 +109,7 @@ On macOS/Docker Desktop, runtime scenarios are expected to be blocked or incompl
 
 Host preflight does not prove container log permissions or UPF bootstrap capability. `make runtime-preflight` prepares the Docker-managed application-log volume, checks writes under every Open5GS NF's effective user, and exercises the actual UPF bootstrap (sysctls, IPv4/IPv6 TUN setup, link state, NAT, and cleanup). Add `--mongodb` via `uv run 5g-lab runtime-preflight --mongodb` for isolated MongoDB startup/ping. These explicit Linux checks are separate from static CI and baseline validation. See [runtime validation and troubleshooting](docs/runtime_validation.md) and [the supplied Linux findings](docs/runtime_findings.md).
 
-Non-UPF NFs run as UID/GID 999 with a prepared named log volume, independent of checkout ownership. Fixtures remain in `logs/`; mutable exports go to ignored `runtime/logs/<UTC>/`. UPF uses root + NET_ADMIN + TUN with Compose-managed sysctls and a repository bootstrap; it does not require `privileged: true` in the proposed configuration. The new logging/bootstrap solution still needs external Linux verification.
+Non-UPF NFs run as UID/GID 999 with a prepared named log volume, independent of checkout ownership. Fixtures remain in `logs/`; mutable exports go to ignored `runtime/logs/<UTC>/`. UPF uses root + NET_ADMIN + TUN with Compose-managed sysctls and a repository bootstrap; the Linux validation passed without any privileged container. The expanded preflight verified NF log writes and full UPF bootstrap/cleanup; baseline traffic verified IPv4 forwarding on this VM.
 
 ## Engineering Workflow
 

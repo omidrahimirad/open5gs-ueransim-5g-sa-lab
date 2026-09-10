@@ -1,0 +1,2 @@
+open5gs-ausf  | 2026-09-10T14:43:01.290271600Z 09/10 14:43:01.289: [ausf] WARNING: UnRef NF EndPoint(addr) [10.45.0.23:7777] (../src/ausf/nudm-handler.c:339)
+open5gs-ausf  | 2026-09-10T14:43:01.290316637Z 09/10 14:43:01.290: [ausf] INFO: Setup NF EndPoint(addr) [10.45.0.23:7777] (../src/ausf/nudm-handler.c:339)
