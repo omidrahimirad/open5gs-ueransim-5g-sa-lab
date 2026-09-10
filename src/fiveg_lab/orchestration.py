@@ -45,6 +45,7 @@ REQUIRED_RUNTIME_SERVICES = (
     "udm",
     "udr",
     "pcf",
+    "bsf",
     "amf",
     "smf",
     "upf",

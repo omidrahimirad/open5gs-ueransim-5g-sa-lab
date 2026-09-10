@@ -29,7 +29,7 @@ if command -v ss >/dev/null 2>&1 && ss -H -ltn 2>/dev/null | awk '{print $4}' | 
 fi
 
 log "Starting MongoDB, Open5GS 5GC network functions, and internal DN target."
-docker compose up -d mongodb nrf ausf udm udr pcf amf upf smf dn-server
+docker compose up -d mongodb nrf ausf udm udr bsf pcf amf upf smf dn-server
 
 log "Waiting for core initialization and a restart-free stability window."
 uv run 5g-lab core-ready --output runtime/core-readiness.json

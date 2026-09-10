@@ -126,6 +126,26 @@ services:
         ipv4_address: 10.45.0.24
         aliases: [udr]
 
+  # Open5GS 2.8 PCF registers session bindings with BSF before SM policy response.
+  bsf:
+    image: *open5gs-image
+    user: "999:999"
+    container_name: open5gs-bsf
+    restart: unless-stopped
+    command: ["open5gs-bsfd", "-c", "/opt/open5gs/etc/open5gs/bsf.yaml"]
+    volumes:
+      - ./configs/open5gs/bsf.yaml:/opt/open5gs/etc/open5gs/bsf.yaml:ro
+      - open5gs-logs:/var/log/open5gs
+    depends_on:
+      log-init:
+        condition: service_completed_successfully
+      nrf:
+        condition: service_started
+    networks:
+      core:
+        ipv4_address: 10.45.0.26
+        aliases: [bsf]
+
   pcf:
     image: *open5gs-image
     user: "999:999"
@@ -138,6 +158,8 @@ services:
       - ./configs/open5gs/pcf.yaml:/opt/open5gs/etc/open5gs/pcf.yaml:ro
       - open5gs-logs:/var/log/open5gs
     depends_on:
+      bsf:
+        condition: service_started
       log-init:
         condition: service_completed_successfully
       mongodb:

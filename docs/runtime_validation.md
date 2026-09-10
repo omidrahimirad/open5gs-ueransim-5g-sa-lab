@@ -48,6 +48,8 @@ docker compose exec -T upf ip link show ogstun
 
 Confirm `log-init` exited successfully, non-UPF NFs remain UID/GID 999, MongoDB is healthy, UPF created `ogstun`, and the core functions remain running without startup errors. Continue only when these checks pass.
 
+`make lab-up` now includes `uv run 5g-lab core-ready --output runtime/core-readiness.json`. It waits at most 120 seconds for initialization, MongoDB health, NRF/PFCP associations, and a 30-second window with zero restarts and unchanged process identities. It fails on restart loops or initialization errors; `up -d` alone is never the readiness result. Run the same CLI to recheck an existing core. The JSON retains state and current-process logs for diagnosis.
+
 ```bash
 make subscriber-add
 docker compose --profile ran up -d gnb
@@ -75,6 +77,8 @@ make collect-evidence
 ```
 
 Runtime scenario exit codes are `PASS=0`, `FAIL=1`, `BLOCKED=2`, `ERROR=3`, and `SKIPPED=4`. In particular, `make baseline-test` returns nonzero when host preflight blocks execution.
+
+The baseline runner preserves prior logs, stops the lab UE/gNB, checks core readiness and subscriber provisioning, and recreates gNB and UE sequentially. It requires live NGAP readiness before UE startup, then current registered/session/tunnel/traffic state plus successful protocol events. Current-run stdout is saved in the scenario's own `logs/` directory with a run-start filter. Previous attempts and cumulative application-file diagnostics are excluded from assertions. Keep the complete scenario folder when curating evidence.
 
 6. Parse real logs and save evidence.
 
@@ -115,6 +119,10 @@ The [Linux bootstrap findings](runtime_findings.md) distinguish user-supplied ex
 | MongoDB exits with a kernel 6.19+ incompatibility message | Keep the pinned `mongo:8.3.8-noble` image and ensure resolved Compose includes `GLIBC_TUNABLES=glibc.pthread.rseq=1` for MongoDB. The user reported a successful isolated ping and healthy Compose MongoDB with this setting on kernel `7.0.0-1011-gcp`; the same-host `rseq=0` control failed. Recheck readiness on the target commit. This is a kernel/runtime compatibility setting, not an Open5GS application requirement. |
 | UPF reports `ioctl(TUNSETIFF): Operation not permitted` | Check the effective user and capabilities inside the container. The intended UPF contract is `user: "0:0"`, `NET_ADMIN`, `/dev/net/tun`, Compose-managed sysctls, and the repository bootstrap, without `privileged: true`. The image's default UID 999 had no effective capabilities in the user's failing test. Run `make runtime-preflight` before retrying startup. |
 | NF cannot open `/var/log/open5gs/<nf>.log` | Inspect `docker compose logs log-init` and the NF effective user. Keep the initialized named-volume mount; do not restore `./logs` bind mounts or run all NFs as root. Runtime preflight tests the actual log volume with each NF user. |
+| AMF reports missing `amf.time.t3512.value` | Use the pinned upstream timer default of 540 seconds and rerun config validation. |
+| PCF/UDR connects to `mongodb://mongo/open5gs` | Open5GS gives the image's `DB_URI` environment variable precedence over YAML. Both services must explicitly set `DB_URI=mongodb://mongodb/open5gs`; both YAML files use root-level `db_uri`. Do not add a DNS alias to hide the override. |
+| gNB/UE exits attempting to execute `-c` | The pinned image wrapper expects `gnb` or `ue`. Keep the declared direct binary entrypoints and existing read-only config mounts. |
+| UE rejects `homeNetworkPublicKey` or `integrityMaxRate` | The pinned parser requires a 64-hex public key when present and both integrity rate fields. Use the checked-in versioned example values and rerun config validation. |
 | UPF cannot write `net.ipv6.conf.all.disable_ipv6` | Ensure the resolved Compose uses `/lab/upf-entrypoint.sh` and all three required sysctls. The image entrypoint writes protected sysctls even if their values are already correct; the repository wrapper verifies Docker-configured values instead. |
 | Host preflight passes but container startup fails | Host preflight checks prerequisites such as Linux, SCTP, tools, and TUN availability. It does not exercise NF log mounts or the full UPF bootstrap. Expanded runtime preflight checks log writability and the configured bootstrap with its real user/capabilities; full core readiness and baseline validation remain separate steps. |
 

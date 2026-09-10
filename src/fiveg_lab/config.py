@@ -18,6 +18,7 @@ REQUIRED_NFS = {
     "udm",
     "udr",
     "pcf",
+    "bsf",
     "amf",
     "smf",
     "upf",
@@ -25,7 +26,8 @@ REQUIRED_NFS = {
     "ue",
     "dn-server",
 }
-OPEN5GS_NFS = ("nrf", "ausf", "udm", "udr", "pcf", "amf", "smf", "upf")
+OPEN5GS_NFS = ("nrf", "ausf", "udm", "udr", "bsf", "pcf", "amf", "smf", "upf")
+LAB_SBI_PORT = 7777
 LOG_VOLUME = "open5gs-logs"
 LOG_TARGET = "/var/log/open5gs"
 UPF_ENTRYPOINT = ["/bin/sh", "/lab/upf-entrypoint.sh"]
@@ -102,6 +104,7 @@ def validate_repo(repo_root: Path) -> list[Check]:
             compose, amf, pcf, load_yaml(repo_root / "configs/open5gs/udr.yaml")
         )
         + validate_ueransim_ue_startup_contract(ue)
+        + validate_bsf_contract(compose, load_yaml(repo_root / "configs/open5gs/bsf.yaml"))
     )
 
     compose_ips = collect_static_ips(services)
@@ -645,6 +648,29 @@ def validate_ueransim_ue_startup_contract(ue: dict[str, Any]) -> list[Check]:
             "UERANSIM 3.3.0 requires integrityMaxRate.uplink and .downlink; "
             "each must be full or 64kbps.",
         ),
+    ]
+
+
+def validate_bsf_contract(compose: dict[str, Any], bsf: dict[str, Any]) -> list[Check]:
+    service = nested(compose, "services", "bsf") or {}
+    mount = mount_at(service, "/opt/open5gs/etc/open5gs/bsf.yaml")
+    server = list_first(nested(bsf, "bsf", "sbi", "server"))
+    nrf = list_first(nested(bsf, "bsf", "sbi", "client", "nrf"))
+    return [
+        check(
+            "open5gs_2_8_pcf_bsf_binding_service",
+            service.get("command") == ["open5gs-bsfd", "-c", "/opt/open5gs/etc/open5gs/bsf.yaml"]
+            and mount.get("type") == "bind"
+            and mount.get("read_only") is True
+            and str(mount.get("source", "")).endswith("/configs/open5gs/bsf.yaml")
+            and server.get("address") == service_ip(compose, "bsf")
+            and server.get("port") == LAB_SBI_PORT
+            and nrf.get("uri") == f"http://{service_ip(compose, 'nrf')}:{LAB_SBI_PORT}"
+            and nested(compose, "services", "pcf", "depends_on", "bsf", "condition")
+            == "service_started",
+            "Open5GS 2.8 PCF requires BSF for SM-policy binding registration; "
+            "BSF must expose its Compose SBI address and register with lab NRF.",
+        )
     ]
 
 
