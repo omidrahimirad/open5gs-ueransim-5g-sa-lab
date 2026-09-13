@@ -12,7 +12,18 @@ from fiveg_lab.orchestration import (
     execute_baseline,
     wait_for_ng_setup,
 )
+from fiveg_lab.readiness import ReadinessResult
 from fiveg_lab.scenarios import load_scenario
+
+
+@pytest.fixture(autouse=True)
+def healthy_core_stub(monkeypatch: MonkeyPatch) -> None:
+    # Unit-only readiness result; real readiness is exercised separately on Linux.
+    monkeypatch.setattr(
+        "fiveg_lab.orchestration.wait_core_ready",
+        lambda _root: ReadinessResult(True, "unit core ready", 30, {}, {}),
+    )
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EVENT_LOG = "\n".join(
@@ -44,6 +55,8 @@ class BaselineCommands:
         self.calls.append(args)
         returncode = 0
         stdout = "container-id"
+        if args[:2] == ["docker", "inspect"]:
+            stdout = "/ueransim-gnb|running|0\n/ueransim-ue|running|0\n"
         if args == ["./scripts/collect_logs.sh"]:
             assert env is not None
             output = Path(env["OUT_DIR"])
@@ -199,3 +212,42 @@ def test_ng_setup_wait_retries_transient_failure_with_bounded_commands(
     assert len(outcomes) == 4
     assert all(timeout <= 3 for timeout in calls)
     assert now[0] < 5
+
+
+@pytest.mark.parametrize(
+    "failure", ["PCF exited after traffic", "AMF restarts=1", "deadline reached"]
+)
+def test_final_core_failure_overrides_successful_traffic(
+    monkeypatch: MonkeyPatch, tmp_path: Path, failure: str
+) -> None:
+    runner = BaselineCommands()
+
+    def final_core(_root: Path) -> ReadinessResult:
+        assert ["./scripts/traffic_test.sh"] in runner.calls
+        return ReadinessResult(False, failure, 120, {}, {})
+
+    monkeypatch.setattr("fiveg_lab.orchestration.wait_core_ready", final_core)
+    result = execute(monkeypatch, tmp_path, runner)
+    assert result.status == ResultStatus.FAIL
+    assert not result.baseline_ready
+    assert any(
+        a.name == "baseline:final_core_ready" and a.status == ResultStatus.FAIL
+        for a in result.assertions
+    )
+    assert (tmp_path / "baseline_final_core_readiness.json").exists()
+
+
+def test_late_ran_restart_cannot_pass(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    runner = BaselineCommands()
+    original = runner.command
+
+    def command(
+        args: list[str], cwd: Path, timeout: int, env: dict[str, str] | None = None
+    ) -> CommandOutcome:
+        result = original(args, cwd, timeout, env)
+        if args[:2] == ["docker", "inspect"]:
+            return CommandOutcome(args, 0, "/ueransim-gnb|running|0\n/ueransim-ue|running|1", "")
+        return result
+
+    monkeypatch.setattr(runner, "command", command)
+    assert execute(monkeypatch, tmp_path, runner).status == ResultStatus.FAIL

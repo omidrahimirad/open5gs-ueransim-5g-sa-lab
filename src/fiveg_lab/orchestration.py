@@ -28,10 +28,11 @@ from fiveg_lab.models import (
 from fiveg_lab.parser import parse_file
 from fiveg_lab.preflight import checks_pass as preflight_checks_pass
 from fiveg_lab.preflight import run_preflight
+from fiveg_lab.readiness import wait_core_ready
 from fiveg_lab.runtime_preflight import interrupt_probe, stop_process_group
 from fiveg_lab.scenarios import Scenario
 
-BASELINE_CONTEXT_SCHEMA_VERSION = 1
+BASELINE_CONTEXT_SCHEMA_VERSION = 2
 IMAGE_DEFAULT_RE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*):-([^}]+)}$")
 FINGERPRINT_RE = re.compile(r"^[0-9a-f]{64}$")
 RUNTIME_CONTEXT_PATHS = (
@@ -87,7 +88,7 @@ def run_runtime_scenario(
     started_at = utc_now()
     run_id = make_run_id(scenario.id, started_at)
     output_dir = output_root / run_id
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=False)
     context = runtime_context_manifest(repo_root)
     fingerprint = context_fingerprint(context)
     (output_dir / "environment.json").write_text(
@@ -101,6 +102,8 @@ def run_runtime_scenario(
     )
 
     blocked = blocking_reason(repo_root)
+    if not context.get("effective_compose", {}).get("available", False):
+        blocked.append("Effective Compose configuration could not be resolved.")
     if blocked:
         result = blocked_result(scenario, run_id, started_at, blocked, fingerprint)
         write_result(result, output_dir)
@@ -116,6 +119,18 @@ def run_runtime_scenario(
                 [gate.reason],
                 fingerprint,
             )
+            write_result(result, output_dir)
+            return result
+        live = validate_current_baseline(repo_root, output_dir, 30, phase="pre_fault")
+        if live.status != ResultStatus.PASS:
+            result = blocked_result(
+                scenario,
+                run_id,
+                started_at,
+                ["Current baseline is unhealthy; no fault was applied."],
+                fingerprint,
+            )
+            result.evidence.extend(runtime_evidence(output_dir, *live.evidence_paths))
             write_result(result, output_dir)
             return result
 
@@ -370,7 +385,14 @@ def execute_fault_scenario(  # noqa: PLR0912, PLR0915
     rollback_error: str | None = None
     injector = FaultInjector(scenario.fault, compose_runner(repo_root))
     traffic_path = output_dir / "fault_traffic_result.txt"
+    logs_dir = output_dir / "fault_logs"
+    # Docker's collection timestamps, not application clocks, define this boundary.
+    boundary = utc_now()
+    (output_dir / "fault_boundary.json").write_text(
+        json.dumps({"since": boundary, "run_id": run_id}) + "\n", encoding="utf-8"
+    )
 
+    previous_term = signal.signal(signal.SIGTERM, interrupt_probe)
     try:
         injector.apply()
         fault_applied = injector.applied
@@ -379,33 +401,49 @@ def execute_fault_scenario(  # noqa: PLR0912, PLR0915
             raise RuntimeError(f"fault apply verification failed: {detail}")
         fault_verified = True
         time.sleep(settle_seconds)
-        outcomes.append(
-            run_command(
-                ["./scripts/traffic_test.sh"],
-                repo_root,
-                scenario.timeout_seconds,
-                env={"OUT": str(traffic_path)},
-            )
+        traffic = run_command(
+            ["./scripts/traffic_test.sh"],
+            repo_root,
+            scenario.timeout_seconds,
+            env=scenario_traffic_environment(traffic_path),
         )
-        outcomes.append(
-            run_command(["./scripts/collect_logs.sh"], repo_root, scenario.timeout_seconds)
+        outcomes.append(traffic)
+        collected = run_command(
+            ["./scripts/collect_logs.sh"],
+            repo_root,
+            scenario.timeout_seconds,
+            env={"OUT_DIR": str(logs_dir.resolve()), "SINCE": boundary},
         )
-    except (RuntimeError, subprocess.SubprocessError, TimeoutError) as exc:
-        infrastructure_error = str(exc)
+        outcomes.append(collected)
+        if collected.returncode != 0:
+            raise RuntimeError("Current fault log collection failed; historical fallback forbidden")
+        if traffic.returncode not in {0, 4} or not traffic_path.is_file():
+            raise RuntimeError("Current fault traffic evidence unavailable or probe failed")
+        marker = "USER_PLANE_SUCCESS" if traffic.returncode == 0 else "USER_PLANE_FAILURE"
+        if marker not in traffic_path.read_text(encoding="utf-8"):
+            raise RuntimeError("Current traffic exit status and evidence disagree")
+    except (RuntimeError, subprocess.SubprocessError, TimeoutError, KeyboardInterrupt) as exc:
+        infrastructure_error = str(exc) or "Scenario interrupted"
     finally:
-        if injector.applied or injector.cleanup_required:
-            recovery_attempted = True
-            try:
-                injector.remove()
-            except (RuntimeError, subprocess.SubprocessError, TimeoutError) as exc:
-                rollback_error = str(exc)
-            else:
-                rollback_verified = injector.verify_removed()
-                if not rollback_verified:
-                    rollback_error = (
-                        injector.last_verification_error
-                        or "fault removal verification did not match runtime state"
-                    )
+        previous_int = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        try:
+            if injector.applied or injector.cleanup_required:
+                recovery_attempted = True
+                try:
+                    injector.remove()
+                except (RuntimeError, subprocess.SubprocessError, TimeoutError) as exc:
+                    rollback_error = str(exc)
+                else:
+                    rollback_verified = injector.verify_removed()
+                    if not rollback_verified:
+                        rollback_error = (
+                            injector.last_verification_error
+                            or "fault removal verification did not match runtime state"
+                        )
+        finally:
+            signal.signal(signal.SIGINT, previous_int)
+            signal.signal(signal.SIGTERM, previous_term)
 
     recovery = RecoveryValidation(ResultStatus.SKIPPED, [], [], [])
     if fault_verified and rollback_verified:
@@ -413,10 +451,10 @@ def execute_fault_scenario(  # noqa: PLR0912, PLR0915
         outcomes.extend(recovery.outcomes)
 
     write_command_log(outcomes, output_dir / "commands.json")
-    events = parse_runtime_events(repo_root, traffic_path)
+    events = parse_runtime_events(repo_root, traffic_path, log_dir=logs_dir)
     assertions = evaluate_scenario_events(scenario, set(events))
     fault_status = scenario_status(assertions)
-    expected_failure_observed = fault_status == ResultStatus.PASS
+    expected_failure_observed = infrastructure_error is None and fault_status == ResultStatus.PASS
 
     if infrastructure_error:
         notes.append(f"Fault scenario infrastructure failed: {infrastructure_error}")
@@ -450,7 +488,13 @@ def execute_fault_scenario(  # noqa: PLR0912, PLR0915
         rollback_verified=rollback_verified,
         recovery_assertions=recovery.assertions,
         recovery_verified=recovery.status == ResultStatus.PASS,
-        evidence=runtime_evidence(output_dir, traffic_path, *recovery.evidence_paths),
+        evidence=runtime_evidence(
+            output_dir,
+            traffic_path,
+            output_dir / "fault_boundary.json",
+            *sorted(logs_dir.glob("*.log")),
+            *recovery.evidence_paths,
+        ),
         notes=notes,
     )
 
@@ -578,7 +622,7 @@ def validate_current_baseline(
         ["./scripts/traffic_test.sh"],
         repo_root,
         timeout,
-        env={"OUT": str(traffic_path)},
+        env=scenario_traffic_environment(traffic_path),
     )
     outcomes.append(traffic)
     evidence_paths.append(traffic_path)
@@ -593,12 +637,106 @@ def validate_current_baseline(
         )
     )
 
+    final = validate_final_health(repo_root, output_dir, timeout, phase)
+    assertions.extend(final.assertions)
+
     assertions_path = output_dir / f"{phase}_assertions.json"
     assertions_path.write_text(
         json.dumps([asdict(assertion) for assertion in assertions], indent=2), encoding="utf-8"
     )
     evidence_paths.append(assertions_path)
+    return RecoveryValidation(
+        scenario_status(assertions),
+        assertions,
+        outcomes + final.outcomes,
+        evidence_paths + final.evidence_paths,
+    )
+
+
+def validate_final_health(
+    repo_root: Path, output_dir: Path, timeout: int, phase: str
+) -> RecoveryValidation:
+    assertions: list[AssertionResult] = []
+    outcomes: list[CommandOutcome] = []
+    evidence_paths: list[Path] = []
+    # Traffic success must not conceal a late core crash or association loss.
+    final_started = utc_now()
+    core = wait_core_ready(repo_root)
+    core_path = output_dir / f"{phase}_final_core_readiness.json"
+    core.write(core_path)
+    evidence_paths.append(core_path)
+    assertions.append(
+        state_assertion(
+            f"{phase}:final_core_ready",
+            core.passed,
+            "initialized core, MongoDB healthy, current associations, zero restarts for 30s",
+            core.detail,
+        )
+    )
+    # Recheck RAN protocol state after the core stability window, not only before traffic.
+    for service, subcommand, pattern in (
+        ("gnb", "status", r"is-ngap-up:\s*true(?:\s|$)"),
+        ("ue", "status", r"rm-state:\s*RM-REGISTERED(?:\s|$)"),
+        ("ue", "ps-list", r"state:\s*PS-ACTIVE(?:\s|$)"),
+    ):
+        current = run_ueransim_cli(repo_root, service, subcommand, timeout)
+        outcomes.extend(current)
+        path = output_dir / f"{phase}_final_{service}_{subcommand}.txt"
+        write_outcome(current[-1], path)
+        evidence_paths.append(path)
+        assertions.append(
+            state_assertion(
+                f"{phase}:final_{service}_{subcommand}",
+                current[-1].returncode == 0 and bool(re.search(pattern, current[-1].stdout)),
+                pattern,
+                current[-1].stdout.strip() or current[-1].stderr.strip(),
+            )
+        )
+    ran = run_command(
+        [
+            "docker",
+            "inspect",
+            "--format",
+            "{{.Name}}|{{.State.Status}}|{{.RestartCount}}",
+            "ueransim-gnb",
+            "ueransim-ue",
+        ],
+        repo_root,
+        timeout,
+    )
+    outcomes.append(ran)
+    ran_path = output_dir / f"{phase}_final_ran_containers.txt"
+    write_outcome(ran, ran_path)
+    evidence_paths.append(ran_path)
+    assertions.append(
+        state_assertion(
+            f"{phase}:final_ran_running_without_restarts",
+            ran.returncode == 0
+            and set(ran.stdout.splitlines())
+            == {"/ueransim-gnb|running|0", "/ueransim-ue|running|0"},
+            "both RAN containers running with zero restarts",
+            ran.stdout.strip(),
+        )
+    )
+    (output_dir / f"{phase}_final_health_timing.json").write_text(
+        json.dumps({"started_at": final_started, "finished_at": utc_now(), "after_traffic": True})
+        + "\n",
+        encoding="utf-8",
+    )
+    evidence_paths.append(output_dir / f"{phase}_final_health_timing.json")
+
     return RecoveryValidation(scenario_status(assertions), assertions, outcomes, evidence_paths)
+
+
+def scenario_traffic_environment(path: Path) -> dict[str, str]:
+    # Standalone traffic_test.sh permits exploratory targets. Scenario assertions
+    # specifically promise this lab's DN path, never an inherited local ping target.
+    return {
+        "OUT": str(path.resolve()),
+        "TARGET": "10.46.0.100",
+        "UE_TUNNEL": "uesimtun0",
+        "COUNT": "5",
+    }
 
 
 def run_ueransim_cli(
@@ -650,14 +788,8 @@ def state_assertion(name: str, passed: bool, expected: str, observed: str) -> As
 
 def compose_runner(repo_root: Path) -> CommandRunner:
     def runner(command: Command, timeout: int) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            list(command),
-            cwd=repo_root,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
+        result = run_command(list(command), repo_root, timeout)
+        return subprocess.CompletedProcess(command, result.returncode, result.stdout, result.stderr)
 
     return runner
 
@@ -671,7 +803,9 @@ def run_command(
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
-    previous_term = signal.signal(signal.SIGTERM, interrupt_probe)
+    previous_term = signal.getsignal(signal.SIGTERM)
+    if previous_term != signal.SIG_IGN:
+        signal.signal(signal.SIGTERM, interrupt_probe)
     try:
         with subprocess.Popen(
             args,
@@ -799,13 +933,15 @@ def runtime_context_manifest(repo_root: Path) -> dict[str, Any]:
     config_paths = [repo_root / item for item in RUNTIME_CONTEXT_PATHS]
     config_paths.extend(sorted((repo_root / "configs/open5gs").glob("*.yaml")))
     config_paths.extend(sorted((repo_root / "configs/ueransim").glob("*.yaml")))
+    effective = effective_compose_state(repo_root)
     return {
         "schema_version": BASELINE_CONTEXT_SCHEMA_VERSION,
         "git_commit": repository_commit(repo_root),
         "config_sha256": {
             str(path.relative_to(repo_root)): sha256_file(path) for path in config_paths
         },
-        "runtime_images": resolved_runtime_images(repo_root),
+        "runtime_images": effective.get("images", {}),
+        "effective_compose": effective,
         "host": {
             "node": platform.node(),
             "system": platform.system(),
@@ -814,6 +950,42 @@ def runtime_context_manifest(repo_root: Path) -> dict[str, Any]:
             "docker_engine": docker_engine_identity(repo_root),
         },
     }
+
+
+def effective_compose_state(repo_root: Path) -> dict[str, Any]:
+    """Hash resolved overrides/environment without recording their possible secrets."""
+    result = run_command(
+        [
+            "docker",
+            "compose",
+            "--profile",
+            "ran",
+            "--profile",
+            "tools",
+            "config",
+            "--format",
+            "json",
+        ],
+        repo_root,
+        15,
+    )
+    try:
+        if result.returncode:
+            raise ValueError("Compose resolution failed")
+        resolved = json.loads(result.stdout)
+        if not isinstance(resolved.get("services"), dict):
+            raise ValueError("Compose services missing")
+        return {
+            "available": True,
+            "sha256": context_fingerprint(resolved),
+            "images": {
+                name: service["image"]
+                for name, service in resolved["services"].items()
+                if "image" in service
+            },
+        }
+    except (ValueError, TypeError, AttributeError):
+        return {"available": False}
 
 
 def context_fingerprint(context: dict[str, Any]) -> str:

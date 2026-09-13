@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
 from pathlib import Path
 
 import pytest
@@ -20,7 +22,17 @@ from fiveg_lab.orchestration import (
     validate_recovered_baseline,
     version_manifest,
 )
-from fiveg_lab.scenarios import FaultSpec, Scenario
+from fiveg_lab.readiness import ReadinessResult
+from fiveg_lab.scenarios import FaultSpec, Scenario, load_scenario
+
+
+@pytest.fixture(autouse=True)
+def healthy_core_stub(monkeypatch: MonkeyPatch) -> None:
+    # Unit-only readiness result; real readiness is exercised separately on Linux.
+    monkeypatch.setattr(
+        "fiveg_lab.orchestration.wait_core_ready",
+        lambda _root: ReadinessResult(True, "unit core ready", 30, {}, {}),
+    )
 
 
 def context() -> dict[str, object]:
@@ -180,6 +192,8 @@ def fake_recovery_command(
     _timeout: int,
     env: dict[str, str] | None = None,
 ) -> CommandOutcome:
+    if args[:2] == ["docker", "inspect"]:
+        return outcome(args, "/ueransim-gnb|running|0\n/ueransim-ue|running|0\n")
     if args == ["./scripts/traffic_test.sh"]:
         assert env is not None
         Path(env["OUT"]).write_text("USER_PLANE_SUCCESS\n", encoding="utf-8")
@@ -276,13 +290,24 @@ def test_failed_fault_verification_prevents_pass(monkeypatch: MonkeyPatch, tmp_p
     assert not result.recovery_verified
 
 
+def valid_fault_command(
+    args: list[str], _cwd: Path, _timeout: int, env: dict[str, str] | None = None
+) -> CommandOutcome:
+    assert env is not None
+    if args == ["./scripts/traffic_test.sh"]:
+        Path(env["OUT"]).write_text("USER_PLANE_SUCCESS\n")
+    else:
+        Path(env["OUT_DIR"]).mkdir(exist_ok=True)
+    return outcome(args)
+
+
 def test_recovery_failure_forces_overall_scenario_failure(
     monkeypatch: MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr("fiveg_lab.orchestration.FaultInjector", VerifiedInjector)
     monkeypatch.setattr(
         "fiveg_lab.orchestration.run_command",
-        lambda args, _cwd, _timeout, env=None: outcome(args, stdout=str(env or "")),
+        valid_fault_command,
     )
     failed_assertion = AssertionResult(
         name="recovery:n2_ready",
@@ -315,7 +340,7 @@ def test_rollback_command_failure_is_reported_and_prevents_pass(
     monkeypatch.setattr("fiveg_lab.orchestration.FaultInjector", RollbackFailureInjector)
     monkeypatch.setattr(
         "fiveg_lab.orchestration.run_command",
-        lambda args, _cwd, _timeout, env=None: outcome(args, stdout=str(env or "")),
+        valid_fault_command,
     )
 
     result = execute_fault_scenario(
@@ -325,3 +350,86 @@ def test_rollback_command_failure_is_reported_and_prevents_pass(
     assert result.status == ResultStatus.FAIL
     assert not result.rollback_verified
     assert any("rollback command failed" in note for note in result.notes)
+
+
+@pytest.mark.parametrize("collection_failed", [False, True])
+def test_old_fault_event_cannot_replace_missing_current_evidence(
+    monkeypatch: MonkeyPatch, tmp_path: Path, collection_failed: bool
+) -> None:
+    old = tmp_path / "runtime/logs/20260901T000000Z"
+    old.mkdir(parents=True)
+    (old / "ue.log").write_text("2026-09-01T00:00:00Z USER_PLANE_FAILURE\n")
+    fault = load_scenario(Path(__file__).parents[1] / "scenarios/n3_impairment.yaml")
+    monkeypatch.setattr("fiveg_lab.orchestration.FaultInjector", VerifiedInjector)
+    monkeypatch.setattr("fiveg_lab.orchestration.utc_now", lambda: "2026-09-13T00:00:00Z")
+    monkeypatch.setattr(
+        "fiveg_lab.orchestration.validate_recovered_baseline",
+        lambda *_: RecoveryValidation(ResultStatus.PASS, [], [], []),
+    )
+
+    def command(
+        args: list[str], _cwd: Path, _timeout: int, env: dict[str, str] | None = None
+    ) -> CommandOutcome:
+        assert env is not None
+        if args == ["./scripts/collect_logs.sh"]:
+            assert env["SINCE"] == "2026-09-13T00:00:00Z"
+            assert Path(env["OUT_DIR"]) == tmp_path / "fault_logs"
+            return outcome(args, returncode=int(collection_failed))
+        return outcome(args, returncode=1)  # Probe failed; no valid current traffic artifact.
+
+    monkeypatch.setattr("fiveg_lab.orchestration.run_command", command)
+    result = execute_fault_scenario(tmp_path, fault, tmp_path, "audit", "start", "f" * 64, 0)
+    assert result.status == ResultStatus.ERROR
+    assert "user_plane_failure" not in result.observed_events
+    assert not result.expected_failure_observed
+    assert result.rollback_verified
+
+
+def test_current_fault_traffic_can_satisfy_fault_assertion(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    fault = load_scenario(Path(__file__).parents[1] / "scenarios/n3_impairment.yaml")
+    monkeypatch.setattr("fiveg_lab.orchestration.FaultInjector", VerifiedInjector)
+    monkeypatch.setattr(
+        "fiveg_lab.orchestration.validate_recovered_baseline",
+        lambda *_: RecoveryValidation(ResultStatus.PASS, [], [], []),
+    )
+
+    def command(
+        args: list[str], _cwd: Path, _timeout: int, env: dict[str, str] | None = None
+    ) -> CommandOutcome:
+        assert env is not None
+        if args == ["./scripts/traffic_test.sh"]:
+            Path(env["OUT"]).write_text("2026-09-13T00:00:00Z USER_PLANE_FAILURE\n")
+            return outcome(args, returncode=4)
+        Path(env["OUT_DIR"]).mkdir()
+        return outcome(args)
+
+    monkeypatch.setattr("fiveg_lab.orchestration.run_command", command)
+    result = execute_fault_scenario(tmp_path, fault, tmp_path, "audit", "start", "f" * 64, 0)
+    assert result.status == ResultStatus.PASS  # Synthetic command evidence only.
+    assert result.expected_failure_observed
+
+
+def test_sigterm_after_apply_runs_rollback_and_reports_interruption(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    removed = []
+
+    class InterruptedInjector(VerifiedInjector):
+        def apply(self) -> None:
+            self.cleanup_required = True
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        def remove(self) -> None:
+            removed.append(True)
+            super().remove()
+
+    previous = signal.getsignal(signal.SIGTERM)
+    monkeypatch.setattr("fiveg_lab.orchestration.FaultInjector", InterruptedInjector)
+    result = execute_fault_scenario(tmp_path, scenario(), tmp_path, "audit", "start", "f" * 64, 0)
+    assert result.status == ResultStatus.ERROR
+    assert removed == [True]
+    assert result.rollback_verified
+    assert any("interrupted" in note for note in result.notes)
+    assert signal.getsignal(signal.SIGTERM) == previous

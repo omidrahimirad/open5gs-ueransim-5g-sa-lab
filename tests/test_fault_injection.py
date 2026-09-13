@@ -128,6 +128,7 @@ def test_restart_verification_requires_new_running_instance_start_time() -> None
 def test_impairment_verification_checks_installed_and_removed_rule() -> None:
     filter_outputs = iter(
         [
+            "",  # No existing rule before this attempt.
             "filter protocol ip pref 2152 flower chain 0 handle 0x4e33\n"
             "  ip_proto udp\n  dst_ip 10.45.0.30\n  dst_port 2152\n"
             "  action order 1: gact action drop",
@@ -177,3 +178,65 @@ def test_cleanup_reports_scenario_and_rollback_failures() -> None:
         RuntimeError, match="scenario failed: scenario failed; rollback failed: start failed"
     ):
         run_with_fault_cleanup(injector, failing_body)
+
+
+@pytest.mark.parametrize("interrupted", [False, True])
+def test_partial_stop_is_rolled_back_even_when_apply_does_not_return(interrupted: bool) -> None:
+    running = [True]
+    history: list[tuple[str, ...]] = []
+
+    def runner(command: tuple[str, ...], _timeout: int) -> subprocess.CompletedProcess[str]:
+        history.append(command)
+        if "stop" in command:
+            running[0] = False
+            if interrupted:
+                raise KeyboardInterrupt
+            return subprocess.CompletedProcess(command, 1, "", "stop reply lost")
+        if "start" in command:
+            running[0] = True
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    injector = FaultInjector(FaultSpec(type="stop_service", target="smf"), runner)
+    with pytest.raises(KeyboardInterrupt if interrupted else RuntimeError):
+        run_with_fault_cleanup(injector, lambda: None)
+    assert running[0]
+    assert history[-1] == ("docker", "compose", "start", "smf")
+    previous = list(history)
+    injector.remove()
+    assert history == previous  # Repeated cleanup is a no-op after successful rollback.
+
+
+def test_partial_stop_preserves_apply_and_cleanup_errors() -> None:
+    def runner(command: tuple[str, ...], _timeout: int) -> subprocess.CompletedProcess[str]:
+        error = "partial stop failure" if "stop" in command else "cleanup start failure"
+        return subprocess.CompletedProcess(command, 1, "", error)
+
+    injector = FaultInjector(FaultSpec(type="stop_service", target="smf"), runner)
+    with pytest.raises(
+        RuntimeError, match="partial stop failure; rollback failed: cleanup start failure"
+    ):
+        run_with_fault_cleanup(injector, lambda: None)
+    assert injector.cleanup_required
+
+
+def test_partial_filter_add_arms_exact_cleanup_before_command() -> None:
+    installed = [False]
+    calls: list[tuple[str, ...]] = []
+
+    def runner(command: tuple[str, ...], _timeout: int) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        if "qdisc" in command and "show" in command:
+            return subprocess.CompletedProcess(command, 0, "qdisc clsact", "")
+        if "filter" in command and "add" in command:
+            installed[0] = True
+            return subprocess.CompletedProcess(command, 1, "", "reply lost after add")
+        if "filter" in command and "del" in command:
+            installed[0] = False
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    injector = FaultInjector(FaultSpec(type="n3_impairment", target="gnb"), runner)
+    with pytest.raises(RuntimeError, match="reply lost"):
+        run_with_fault_cleanup(injector, lambda: None)
+    assert not installed[0]
+    assert any("filter" in c and "del" in c for c in calls)
+    assert not any("qdisc" in c and "del" in c for c in calls)
