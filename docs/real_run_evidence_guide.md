@@ -1,6 +1,6 @@
 # Real-Run Evidence Guide
 
-Use this guide when validating the lab on Ubuntu. Until this evidence exists, the project should be described as configuration/parser validated with sample logs, not as fully executed.
+Use this guide for additional Ubuntu validation runs. The [committed September 13 audit](../evidence/real_runs/20260913_pre_merge_audit/README.md) already validates the one-UE Linux baseline and N3 impairment/recovery at `daca4542608f0bb20ca01441f5e584ce89890ad1`. Other fault scenarios lack fresh Linux validation; every additional claim requires its own real evidence. Sample logs remain fixture evidence only.
 
 ## Recommended Host
 

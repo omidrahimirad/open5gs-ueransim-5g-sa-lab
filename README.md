@@ -4,13 +4,17 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![Open5GS](https://img.shields.io/badge/Open5GS-2.8.0-2E7D32)
 ![UERANSIM](https://img.shields.io/badge/UERANSIM-3.3.0-F57C00)
-![Status](https://img.shields.io/badge/Status-Linux%20baseline%20validated%20%7C%20faults%20pending-green)
+![Status: Linux baseline and N3 fault/recovery validated](https://img.shields.io/badge/Status-Linux%20baseline%20%2B%20N3%20fault%2Frecovery%20validated-green)
 
 Open5GS + UERANSIM lab for 5G SA system integration, deterministic configuration checks, protocol-aware evidence extraction, failure injection, and recovery validation.
 
 This repository is a telecom validation project, not an AI demo and not a production network claim. It models a one-UE 5G SA lab with the 5GC functions required by the selected Open5GS 2.8.0 flow: NRF, AMF, AUSF, UDM, UDR, PCF, BSF, SMF, UPF, MongoDB, UERANSIM gNB/UE, and an internal DN test target.
 
-Current claim level: **STATIC + FIXTURE VALIDATED / ONE-UE LINUX BASELINE VERIFIED**. On 2026-09-10, `baseline_e2e` passed on the Google Cloud Linux VM at commit `c94601398f1009008ff4b779b0c5a510253b9983`. [Collected evidence](evidence/real_runs/20260910T144212150699Z_baseline_e2e/README.md) proves NG Setup, UE registration, an active IPv4 PDU session, `uesimtun0`, and interface-bound DN traffic. Fault impact/recovery, throughput, IPv6 sessions, and other hosts remain unvalidated. Sample logs remain fixture evidence only.
+Current claim level: **STATIC + FIXTURE VALIDATED / ONE-UE LINUX BASELINE + N3 FAULT/RECOVERY VERIFIED**. The latest [Linux audit evidence](evidence/real_runs/20260913_pre_merge_audit/README.md), executed on 2026-09-13 at `daca4542608f0bb20ca01441f5e584ce89890ad1`, records `baseline_e2e` **PASS, 25/25 assertions**: NG Setup, UE registration, an active IPv4 PDU session, `uesimtun0`, and DN traffic with 5/5 replies. The mandatory final health gate ran after traffic and confirmed healthy core/RAN state with zero restarts.
+
+The real N3 impairment applied a scoped UDP/2152 drop, caused 100% packet loss, and verified rollback with 5/5 replies restored and all 11 recovery checks passing. A separate stale-evidence negative audit deliberately failed the current probe/collector and correctly returned **ERROR**, refusing historical `USER_PLANE_FAILURE` evidence. Other fault scenarios have not received fresh Linux runtime validation. Sample logs remain fixture evidence only.
+
+[PR #11](https://github.com/omidrahimirad/open5gs-ueransim-5g-sa-lab/pull/11) is merged into main at `20caaf8dd25de284043c1ba483f92a37514ad4da`; the merge commit is not the runtime-executed commit. The [historical September 10 baseline](evidence/real_runs/20260910T144212150699Z_baseline_e2e/README.md) at `c94601398f1009008ff4b779b0c5a510253b9983` remains preserved as separate evidence.
 
 ## Why It Exists
 
@@ -46,7 +50,7 @@ PCF is included because Open5GS 2.8.0 invokes AM and SM policy-control services 
 | --- | --- | --- |
 | STATIC VERIFIED | Compose renders, YAML/config consistency passes, scenario schemas validate, scripts parse. | Implemented |
 | FIXTURE VERIFIED | Parser, scenario assertions, reporting, and safety logic pass using sample/synthetic evidence. | Implemented |
-| RUNTIME VERIFIED | Real Linux execution proves the specific behavior recorded in each scenario result. | One-UE baseline passed; fault impact/recovery pending |
+| RUNTIME VERIFIED | Real Linux execution proves the specific behavior recorded in each scenario result. | One-UE baseline (25/25) and N3 impairment/recovery passed; other fault scenarios lack fresh Linux validation |
 
 CI intentionally covers static and fixture validation only. It does not claim real 5G runtime success.
 
@@ -54,7 +58,7 @@ CI intentionally covers static and fixture validation only. It does not claim re
 
 | ID | Fault domain | Expected registration | Expected PDU session | Expected user plane | Recovery expected | Runtime validated |
 | --- | --- | --- | --- | --- | --- | --- |
-| `baseline_e2e` | Healthy baseline | Accept | Accept | DN traffic succeeds through UE tunnel | N/A | Yes, Linux / `c946013` |
+| `baseline_e2e` | Healthy baseline | Accept | Accept | DN traffic succeeds through UE tunnel | N/A | Yes, Linux / [`daca454`, 25/25](evidence/real_runs/20260913_pre_merge_audit/20260913T134706899485Z_baseline_e2e/scenario_result.json) |
 | `invalid_subscriber_key` | Authentication | Reject/fail | Not established | Unavailable | Restore key/OPc and baseline | No |
 | `unknown_subscriber` | Subscriber | Reject/fail | Not established | Unavailable | Restore SUPI/DB record and baseline | No |
 | `dnn_mismatch` | Session management | May accept | Reject/fail | Unavailable | Restore DNN and baseline | No |
@@ -63,9 +67,9 @@ CI intentionally covers static and fixture validation only. It does not claim re
 | `smf_unavailable` | Session management | May remain available | Reject/fail | Unavailable | Start SMF and baseline | No |
 | `upf_unavailable` | User plane | May remain available | PFCP/session impact possible | Fails | Start UPF and baseline | No |
 | `n2_impairment` | Transport | NGAP/SCTP impact observed | Interpreted after CP state | Interpreted after CP state | Remove scoped impairment and baseline | No |
-| `n3_impairment` | Transport | May remain healthy | May remain established | Degrades/fails | Remove scoped impairment and baseline | No |
+| `n3_impairment` | Transport | May remain healthy | May remain established | Degrades/fails | Remove scoped impairment and baseline | Yes, Linux / [`daca454`, fault + recovery](evidence/real_runs/20260913_pre_merge_audit/20260913T134948542881Z_n3_impairment/scenario_result.json) |
 
-Fault scenarios are gated by `baseline_e2e`: a broken baseline blocks fault interpretation. The baseline result is accepted only when its commit, configuration hashes, resolved image values, and host/runtime identity match the current run.
+Fault scenarios are gated by `baseline_e2e`: a broken baseline blocks fault interpretation. The baseline result is accepted only when its commit, configuration hashes, canonical effective Compose configuration (including overrides), resolved image values, and host/runtime identity match the current run, and current pre-fault health checks pass.
 
 ## Quick Start
 
@@ -152,7 +156,7 @@ Runtime scenario exit codes are automation-safe: `PASS=0`, `FAIL=1`, `BLOCKED=2`
 
 Sample logs live under [logs](logs/) and are labeled sample. Real Linux runtime evidence must go under `evidence/real_runs/<run_id>/` or a dated real-run folder after sanitization.
 
-Minimum real runtime evidence before changing this project status:
+Minimum real runtime evidence for each additional validation claim:
 
 - environment/version manifest
 - `docker compose ps`
@@ -195,10 +199,11 @@ CI does **not** prove real UE registration, PDU session establishment, SCTP beha
 
 ## Limitations
 
-- UERANSIM is not RF validation and does not model real radio propagation.
+- UERANSIM is not RF/OTA validation and does not model real radio propagation.
 - This is an open-source lab, not a commercial operator network or SLA claim.
 - Runtime behavior depends on Linux kernel, SCTP, TUN, Docker privileges, and bridge routing.
-- The current repository has no live operator validation and no real Linux runtime evidence committed.
+- Committed Linux evidence validates the one-UE baseline and specific N3 fault/recovery path only. Other fault scenarios have not received fresh Linux runtime validation.
+- No throughput, IPv6 PDU-session, PCAP-based protocol validation, multi-host/multi-UE, full fault-matrix, or long-duration reliability claim is made. There is no live operator validation, carrier-grade claim, or production-readiness claim.
 - Packet capture support is a workflow hook; protocol decoding depends on real captures and optional `tshark`.
 - Lab subscriber credentials are intentionally public demo values, not real SIM material.
 
@@ -208,21 +213,26 @@ CI does **not** prove real UE registration, PDU session establishment, SCTP beha
 configs/        Open5GS, UERANSIM, and subscriber config
 diagrams/       Architecture diagram source and SVG
 docs/           Engineering workflow, protocol, runtime, and safety documentation
-evidence/       Placeholder and rules for real Linux runtime evidence
+evidence/       Sanitized Linux baseline/N3 audit evidence and collection rules
 logs/           Sample logs only
 runtime/        Ignored mutable log exports and traffic output
-reports/        Sample/generated reports and future runtime summaries
+reports/        Sample/generated reports and ignored runtime results
 scenarios/      Declarative validation and failure-injection scenarios
 scripts/        Thin operational wrappers
 src/fiveg_lab/  Deterministic validator/parser/scenario/fault tooling
 tests/          Unit and fixture tests; runtime tests are opt-in only
 ```
 
-## Next Step: Linux Runtime Evidence
+## Next Validation Steps
 
-User-supplied Linux tests identified MongoDB kernel/rseq, log-mount permissions, and UPF TUN/sysctl bootstrap defects; their isolated workaround results are documented in [runtime findings](docs/runtime_findings.md). They do not establish a healthy 5G baseline.
+Extend the recorded baseline and N3 results with separate, scoped experiments:
 
-On the external Ubuntu/Linux host, perform a clean Compose teardown, run host and container runtime preflight, start and verify MongoDB/core/UPF, provision the subscriber, verify gNB NG Setup, then verify UE registration/authentication/security/PDU session, `uesimtun0`, and DN traffic. Run and capture `baseline_e2e`, then add curated evidence under `evidence/real_runs/<run_id>/`. Until that exists, keep the public status as **STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING**.
+- Validate the remaining fault matrix with current-run evidence and verified rollback/recovery.
+- Measure throughput with a documented method and environment.
+- Validate an IPv6 PDU session and its data path.
+- Validate multi-UE behavior and longer-duration reliability.
+
+These are future validation steps, not established capabilities. Re-run the baseline on the executing commit before interpreting faults, and preserve sanitized evidence for every new claim. See the [runtime procedure](docs/runtime_validation.md) and [audit findings](docs/pre_merge_audit.md).
 
 ## References
 

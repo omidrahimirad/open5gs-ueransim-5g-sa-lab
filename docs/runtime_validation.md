@@ -78,7 +78,7 @@ make collect-evidence
 
 Runtime scenario exit codes are `PASS=0`, `FAIL=1`, `BLOCKED=2`, `ERROR=3`, and `SKIPPED=4`. In particular, `make baseline-test` returns nonzero when host preflight blocks execution.
 
-The baseline runner preserves prior logs, stops the lab UE/gNB, checks core readiness and subscriber provisioning, and recreates gNB and UE sequentially. It requires live NGAP readiness before UE startup, then current registered/session/tunnel/traffic state plus successful protocol events. Current-run stdout is saved in the scenario's own `logs/` directory with a run-start filter. Previous attempts and cumulative application-file diagnostics are excluded from assertions. Keep the complete scenario folder when curating evidence.
+The baseline runner preserves prior logs, stops the lab UE/gNB, checks core readiness and subscriber provisioning, and recreates gNB and UE sequentially. It requires live NGAP readiness before UE startup, then current registered/session/tunnel/traffic state plus successful protocol events. A mandatory bounded final health gate runs after traffic and requires healthy core associations, zero restarts, and final gNB/UE state. Current-run stdout is saved in the scenario's own `logs/` directory with a run-start filter. Previous attempts and cumulative application-file diagnostics are excluded from assertions. Keep the complete scenario folder when curating evidence.
 
 6. Parse real logs and save evidence.
 
@@ -108,11 +108,11 @@ After rollback, component and transport scenarios write `post_recovery_compose_p
 make lab-down
 ```
 
-Do not update the repository status to runtime validated until the committed evidence includes environment metadata, real logs, parser output, traffic output, and scenario results.
+Extend runtime claims only when the committed evidence for the new behavior includes environment metadata, real logs, parser output, traffic output, and scenario results. The [September 13 audit](../evidence/real_runs/20260913_pre_merge_audit/README.md) validates the baseline (25/25) and N3 impairment/recovery at `daca4542608f0bb20ca01441f5e584ce89890ad1`; other fault scenarios lack fresh Linux validation.
 
 ## Bootstrap troubleshooting
 
-The [Linux bootstrap findings](runtime_findings.md) distinguish initial user-supplied observations, static tests, failed VM attempts, and the subsequent successful Linux baseline. See the [curated baseline evidence](../evidence/real_runs/20260910T144212150699Z_baseline_e2e/README.md) for the exact executing commit and remaining limits.
+The [Linux bootstrap findings](runtime_findings.md) distinguish initial user-supplied observations, static tests, failed VM attempts, and the subsequent successful Linux baseline. See the [latest baseline/N3 audit](../evidence/real_runs/20260913_pre_merge_audit/README.md) for the current verified scope, and the [historical baseline evidence](../evidence/real_runs/20260910T144212150699Z_baseline_e2e/README.md) for the separate September 10 run.
 
 | Symptom | Check and correction |
 | --- | --- |
