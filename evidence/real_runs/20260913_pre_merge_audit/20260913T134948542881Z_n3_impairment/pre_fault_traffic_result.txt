@@ -1,0 +1,36 @@
+[2026-09-13T13:49:53Z] Starting UE user-plane traffic test.
+[2026-09-13T13:49:53Z] Target=10.46.0.100, Count=5, UE_TUNNEL=uesimtun0
+[2026-09-13T13:49:53Z] Inspecting UE network interfaces.
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: eth0@if74: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 96:0b:f8:77:41:cc brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.45.0.50/24 brd 10.45.0.255 scope global eth0
+       valid_lft forever preferred_lft forever
+3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN group default qlen 500
+    link/none
+    inet 10.45.1.2/16 scope global uesimtun0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::d536:e5ca:3c91:f5ac/64 scope link stable-privacy
+       valid_lft forever preferred_lft forever
+[2026-09-13T13:49:54Z] Inspecting UE routes.
+default via 10.45.0.1 dev eth0
+10.45.0.0/24 dev eth0 proto kernel scope link src 10.45.0.50
+10.45.0.0/16 dev uesimtun0 proto kernel scope link src 10.45.1.2
+[2026-09-13T13:49:54Z] Running interface-bound ping over UE tunnel.
+PING 10.46.0.100 (10.46.0.100) from 10.45.1.2 uesimtun0: 56(84) bytes of data.
+64 bytes from 10.46.0.100: icmp_seq=1 ttl=63 time=2.38 ms
+64 bytes from 10.46.0.100: icmp_seq=2 ttl=63 time=1.98 ms
+64 bytes from 10.46.0.100: icmp_seq=3 ttl=63 time=1.63 ms
+64 bytes from 10.46.0.100: icmp_seq=4 ttl=63 time=2.00 ms
+64 bytes from 10.46.0.100: icmp_seq=5 ttl=63 time=1.66 ms
+
+--- 10.46.0.100 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4005ms
+rtt min/avg/max/mdev = 1.632/1.930/2.375/0.270 ms
+[2026-09-13T13:49:59Z] iperf3 found. Run manually with an external/server-side iperf3 target when needed.
+[2026-09-13T13:49:59Z] USER_PLANE_SUCCESS: traffic test completed successfully.

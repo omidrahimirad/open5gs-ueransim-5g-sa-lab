@@ -1,0 +1,402 @@
+{
+  "scenario_id": "baseline_e2e",
+  "run_id": "20260913T134706899485Z_baseline_e2e",
+  "started_at": "2026-09-13T13:47:06.899485Z",
+  "status": "PASS",
+  "baseline_ready": true,
+  "fault_applied": false,
+  "expected_failure_observed": false,
+  "recovery_attempted": false,
+  "recovery_status": "SKIPPED",
+  "observed_events": [
+    "authentication",
+    "component_failure",
+    "error",
+    "ng_setup",
+    "pdu_session_accept",
+    "pdu_session_request",
+    "registration_accept",
+    "registration_request",
+    "security_mode",
+    "ue_tunnel_created",
+    "unclassified_relevant",
+    "user_plane_success"
+  ],
+  "assertions": [
+    {
+      "name": "baseline:initial_ng_setup",
+      "status": "PASS",
+      "expected": "gNB reports is-ngap-up: true",
+      "observed": "is-ngap-up: true",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:required_lab_services_running",
+      "status": "PASS",
+      "expected": "all required 5GC, RAN, UE, and DN services running",
+      "observed": "all running",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:n2_ready",
+      "status": "PASS",
+      "expected": "UERANSIM gNB reports is-ngap-up: true",
+      "observed": "is-ngap-up: true",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:ue_registered",
+      "status": "PASS",
+      "expected": "UERANSIM UE reports RM-REGISTERED",
+      "observed": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:pdu_session_active",
+      "status": "PASS",
+      "expected": "UERANSIM UE reports a PS-ACTIVE PDU session",
+      "observed": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:ue_tunnel_exists",
+      "status": "PASS",
+      "expected": "uesimtun0 exists in the UE container",
+      "observed": "3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500\n    link/none",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:user_plane_dn_traffic",
+      "status": "PASS",
+      "expected": "interface-bound traffic reaches the lab DN target",
+      "observed": "success",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:final_core_ready",
+      "status": "PASS",
+      "expected": "initialized core, MongoDB healthy, current associations, zero restarts for 30s",
+      "observed": "Core initialized, MongoDB healthy, NRF/PFCP associations ready, and no restarts for 30s; not baseline validation",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:final_gnb_status",
+      "status": "PASS",
+      "expected": "is-ngap-up:\\s*true(?:\\s|$)",
+      "observed": "is-ngap-up: true",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:final_ue_status",
+      "status": "PASS",
+      "expected": "rm-state:\\s*RM-REGISTERED(?:\\s|$)",
+      "observed": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:final_ue_ps-list",
+      "status": "PASS",
+      "expected": "state:\\s*PS-ACTIVE(?:\\s|$)",
+      "observed": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "baseline:final_ran_running_without_restarts",
+      "status": "PASS",
+      "expected": "both RAN containers running with zero restarts",
+      "observed": "/ueransim-gnb|running|0\n/ueransim-ue|running|0",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "expected_event:ng_setup",
+      "status": "PASS",
+      "expected": "ng_setup observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:registration_request",
+      "status": "PASS",
+      "expected": "registration_request observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:authentication",
+      "status": "PASS",
+      "expected": "authentication observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:security_mode",
+      "status": "PASS",
+      "expected": "security_mode observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:registration_accept",
+      "status": "PASS",
+      "expected": "registration_accept observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:pdu_session_request",
+      "status": "PASS",
+      "expected": "pdu_session_request observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:pdu_session_accept",
+      "status": "PASS",
+      "expected": "pdu_session_accept observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:ue_tunnel_created",
+      "status": "PASS",
+      "expected": "ue_tunnel_created observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "expected_event:user_plane_success",
+      "status": "PASS",
+      "expected": "user_plane_success observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    },
+    {
+      "name": "forbidden_event:authentication_failure",
+      "status": "PASS",
+      "expected": "authentication_failure absent",
+      "observed": "absent",
+      "detail": "Forbidden event was not observed."
+    },
+    {
+      "name": "forbidden_event:registration_reject",
+      "status": "PASS",
+      "expected": "registration_reject absent",
+      "observed": "absent",
+      "detail": "Forbidden event was not observed."
+    },
+    {
+      "name": "forbidden_event:pdu_session_reject",
+      "status": "PASS",
+      "expected": "pdu_session_reject absent",
+      "observed": "absent",
+      "detail": "Forbidden event was not observed."
+    },
+    {
+      "name": "forbidden_event:user_plane_failure",
+      "status": "PASS",
+      "expected": "user_plane_failure absent",
+      "observed": "absent",
+      "detail": "Forbidden event was not observed."
+    }
+  ],
+  "baseline_context_fingerprint": "77c083a3dd5f2aaa44c94ade87a4026a6d1fc58099ce07c9ba06b89a2b420636",
+  "fault_verified": false,
+  "rollback_verified": false,
+  "recovery_assertions": [],
+  "recovery_verified": false,
+  "evidence": [
+    {
+      "kind": "runtime_manifest",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/environment.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Environment metadata captured at scenario start."
+    },
+    {
+      "kind": "runtime_versions",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/versions.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Pinned runtime image defaults and execution context."
+    },
+    {
+      "kind": "runtime_context",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/runtime_context.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Context used to bind the baseline gate to this runtime."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/commands.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_initial_ng_setup.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_compose_ps.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_gnb_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_ue_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_pdu_sessions.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_ue_tunnel.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_traffic_result.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_assertions.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_final_core_readiness.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_final_gnb_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_final_ue_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_final_ue_ps-list.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_final_ran_containers.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/baseline_final_health_timing.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/amf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/ausf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/bsf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/dn-server.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/gnb.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/log-init.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/mongodb.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/nrf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/pcf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/smf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/udm.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/udr.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/ue.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs/upf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    }
+  ],
+  "notes": []
+}

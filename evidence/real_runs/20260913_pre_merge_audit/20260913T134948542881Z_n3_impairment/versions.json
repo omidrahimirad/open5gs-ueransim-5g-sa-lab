@@ -1,0 +1,10 @@
+{
+  "compose_file": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/docker-compose.yml",
+  "open5gs_image_default": "gradiant/open5gs:2.8.0",
+  "ueransim_image_default": "gradiant/ueransim:3.3.0",
+  "mongodb_image_default": "mongo:8.3.8-noble",
+  "dbctl_image_default": "gradiant/open5gs-dbctl:0.10.3",
+  "dn_server_image_default": "busybox:1.37.0",
+  "policy_control_mode": "PCF enabled for Open5GS 2.8.0",
+  "slice_selection_mode": "direct NRF/SMF discovery; NSSF omitted"
+}

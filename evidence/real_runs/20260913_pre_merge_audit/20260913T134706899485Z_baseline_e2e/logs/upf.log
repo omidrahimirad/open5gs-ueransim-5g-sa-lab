@@ -1,0 +1,18 @@
+open5gs-upf  | 2026-09-13T13:47:13.907021472Z 4: ogstun    inet 10.45.1.1/24 scope global ogstun\       valid_lft forever preferred_lft forever
+open5gs-upf  | 2026-09-13T13:47:13.909464195Z 4: ogstun    inet6 cafe::1/64 scope global \       valid_lft forever preferred_lft forever
+open5gs-upf  | 2026-09-13T13:47:13.913824524Z 4: ogstun: <NO-CARRIER,POINTOPOINT,MULTICAST,NOARP,UP> mtu 1500 qdisc fq_codel state DOWN mode DEFAULT group default qlen 500\    link/none
+open5gs-upf  | 2026-09-13T13:47:13.923721535Z MASQUERADE  all opt -- in * out !ogstun  10.45.1.0/24  -> 0.0.0.0/0
+open5gs-upf  | 2026-09-13T13:47:23.939504561Z Open5GS daemon v2.8.0
+open5gs-upf  | 2026-09-13T13:47:23.939535074Z
+open5gs-upf  | 2026-09-13T13:47:23.939688717Z 09/13 13:47:23.939: [app] INFO: Configuration: '/opt/open5gs/etc/open5gs/upf.yaml' (../lib/app/ogs-init.c:144)
+open5gs-upf  | 2026-09-13T13:47:23.939710753Z 09/13 13:47:23.939: [app] INFO: File Logging: '/var/log/open5gs/upf.log' (../lib/app/ogs-init.c:147)
+open5gs-upf  | 2026-09-13T13:47:23.939717563Z 09/13 13:47:23.939: [app] INFO: LOG-LEVEL: 'info' (../lib/app/ogs-init.c:150)
+open5gs-upf  | 2026-09-13T13:47:24.096589616Z 09/13 13:47:24.096: [metrics] INFO: metrics_server() [http://upf]:9090 (../lib/metrics/prometheus/context.c:390)
+open5gs-upf  | 2026-09-13T13:47:24.096621729Z 09/13 13:47:24.096: [pfcp] INFO: pfcp_server() [10.45.0.30]:8805 (../lib/pfcp/path.c:30)
+open5gs-upf  | 2026-09-13T13:47:24.096628420Z 09/13 13:47:24.096: [gtp] INFO: gtp_server() [10.45.0.30]:2152 (../lib/gtp/path.c:30)
+open5gs-upf  | 2026-09-13T13:47:24.096851018Z 09/13 13:47:24.096: [app] INFO: UPF initialize...done (../src/upf/app.c:31)
+open5gs-upf  | 2026-09-13T13:47:27.314759922Z 09/13 13:47:27.314: [upf] INFO: PFCP associated [10.45.0.21]:8805 (../src/upf/pfcp-sm.c:168)
+open5gs-upf  | 2026-09-13T13:48:22.096866074Z 09/13 13:48:22.096: [upf] INFO: [Added] Number of UPF-Sessions is now 1 (../src/upf/context.c:212)
+open5gs-upf  | 2026-09-13T13:48:22.097030944Z 09/13 13:48:22.096: [gtp] INFO: gtp_connect() [10.45.0.21]:2152 (../lib/gtp/path.c:60)
+open5gs-upf  | 2026-09-13T13:48:22.097056532Z 09/13 13:48:22.097: [upf] INFO: UE F-SEID[UP:0x61 CP:0x359] APN[internet] PDN-Type[1] IPv4[10.45.1.2] IPv6[] (../src/upf/context.c:498)
+open5gs-upf  | 2026-09-13T13:48:22.106194979Z 09/13 13:48:22.106: [gtp] INFO: gtp_connect() [10.45.0.40]:2152 (../lib/gtp/path.c:60)

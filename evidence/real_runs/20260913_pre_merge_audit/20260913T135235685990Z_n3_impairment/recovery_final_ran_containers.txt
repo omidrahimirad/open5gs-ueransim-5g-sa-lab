@@ -1,0 +1,7 @@
+command: docker inspect --format {{.Name}}|{{.State.Status}}|{{.RestartCount}} ueransim-gnb ueransim-ue
+returncode: 0
+stdout:
+/ueransim-gnb|running|0
+/ueransim-ue|running|0
+
+stderr:

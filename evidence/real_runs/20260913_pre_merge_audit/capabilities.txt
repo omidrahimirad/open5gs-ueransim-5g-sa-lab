@@ -1,0 +1,16 @@
+PASS	linux_os	detected=Linux x86_64
+PASS	docker_installed	docker found
+PASS	iproute2_available	ip found
+PASS	ss_available	ss found
+PASS	tc_available	tc found
+PASS	tcpdump_available	tcpdump found
+PASS	tshark_available	tshark found
+PASS	jq_available	jq found
+PASS	curl_available	curl found
+PASS	ping_available	ping found
+PASS	docker_compose_available	Docker Compose version v5.5.1
+PASS	tun_device	/dev/net/tun exists
+PASS	sctp_kernel_support	sctp module listed in /proc/modules
+PASS	ip_forwarding	enabled
+WARN	host_port_conflicts	in_use=7777
+PASS	disk_space	free_gib=38.4

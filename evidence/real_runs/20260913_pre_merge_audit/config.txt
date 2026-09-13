@@ -1,0 +1,53 @@
+PASS	required_network_functions	services=['amf', 'ausf', 'bsf', 'dn-server', 'gnb', 'log-init', 'mongodb', 'nrf', 'open5gs-dbctl', 'pcf', 'smf', 'udm', 'udr', 'ue', 'upf']
+PASS	open5gs_2_8_pcf_required_mode	Open5GS 2.8.0 PCF must be present, use the Compose SBI IP, and use lab MongoDB
+PASS	open5gs_2_8_nssf_bypass_mode	NSSF is intentionally omitted only while SMF advertises the matching S-NSSAI/DNN to NRF
+PASS	open5gs_2_8_amf_t3512	AMF requires a positive integer amf.time.t3512.value in seconds that Open5GS 2.8.0 can encode as GPRS Timer 3 (upstream default: 540).
+PASS	open5gs_2_8_pcf_db_uri	PCF requires root-level db_uri=mongodb://mongodb/open5gs; pcf.db_uri is not a supported key.
+PASS	open5gs_2_8_pcf_db_environment	Compose pcf.environment.DB_URI must explicitly target lab MongoDB; Open5GS gives DB_URI precedence over YAML and the pinned image inherits mongodb://mongo/open5gs.
+PASS	open5gs_2_8_udr_db_uri	UDR requires root-level db_uri=mongodb://mongodb/open5gs; udr.db_uri is not a supported key.
+PASS	open5gs_2_8_udr_db_environment	Compose udr.environment.DB_URI must explicitly target lab MongoDB; Open5GS gives DB_URI precedence over YAML and the pinned image inherits mongodb://mongo/open5gs.
+PASS	ueransim_3_3_home_network_public_key	UERANSIM 3.3.0 requires exactly 64 hexadecimal homeNetworkPublicKey characters when present, including with protectionScheme=0.
+PASS	ueransim_3_3_integrity_max_rate	UERANSIM 3.3.0 requires integrityMaxRate.uplink and .downlink; each must be full or 64kbps.
+PASS	open5gs_2_8_pcf_bsf_binding_service	Open5GS 2.8 PCF requires BSF for SM-policy binding registration; BSF must expose its Compose SBI address and register with lab NRF.
+PASS	unique_static_container_ips	['10.45.0.10', '10.45.0.11', '10.45.0.22', '10.45.0.23', '10.45.0.24', '10.45.0.26', '10.45.0.25', '10.45.0.20', '10.45.0.21', '10.45.0.30', '10.46.0.30', '10.45.0.40', '10.45.0.50', '10.46.0.100']
+PASS	valid_ip_addresses	all static IP addresses parse
+PASS	mcc_consistent	MCC must match NRF, AMF, gNB, UE, and subscriber
+PASS	mnc_consistent	MNC must match NRF, AMF, gNB, UE, and subscriber
+PASS	tac_consistent	AMF TAI TAC must match gNB TAC
+PASS	amf_ngap_ip_matches_compose	10.45.0.20
+PASS	gnb_points_to_amf_ngap	10.45.0.20
+PASS	gnb_ngap_ip_matches_compose	10.45.0.40
+PASS	gnb_gtp_ip_matches_compose	10.45.0.40
+PASS	dnn_consistent	DNN/APN must match SMF, UPF, subscriber, and UE
+PASS	ue_ipv4_pool_consistent	SMF/UPF/subscriber UE pool must match
+PASS	smf_upf_pfcp_ip_consistent	SMF N4 client must target UPF PFCP IP
+PASS	sst_consistent	SST must match AMF, gNB, UE, and subscriber
+PASS	sd_consistent	SD must match AMF, gNB, UE, and subscriber
+PASS	supi_format	imsi-001010000000001
+PASS	supi_matches_subscriber	UE SUPI must match subscriber
+PASS	subscriber_key_format	subscriber K must be 16-byte hex
+PASS	ue_key_matches_subscriber	UE K must match subscriber
+PASS	ue_opc_matches_subscriber	UE OPc must match subscriber
+PASS	ue_amf_matches_subscriber	UE AMF auth field must match subscriber
+PASS	critical_images_not_latest	floating=[]
+WARN	image_overrides_supported	Images can be overridden by environment variables; defaults remain pinned.
+PASS	mongodb_kernel_rseq_compatibility	MongoDB must explicitly set GLIBC_TUNABLES=glibc.pthread.rseq=1 for the Linux kernel compatibility workaround validated on the external VM
+PASS	upf_explicit_root_user	UPF must use user 0:0; the image default uid 999 lacked effective TUN capabilities
+PASS	upf_net_admin_capability	UPF must add NET_ADMIN to create ogstun; verify effective capability with runtime-preflight on Linux
+PASS	upf_tun_device	UPF must expose /dev/net/tun at /dev/net/tun with read/write access
+PASS	upf_without_privileged	UPF must omit privileged or set it false; root + NET_ADMIN + TUN passed the isolated external VM TUN test
+PASS	runtime_log_initializer	Prepare only the Docker-managed runtime log volume with the scoped root initializer.
+PASS	log-init_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	nrf_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	ausf_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	udm_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	udr_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	bsf_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	pcf_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	amf_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	smf_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	upf_runtime_logs	Use initialized named logs; non-UPF NFs remain UID/GID 999.
+PASS	upf_bootstrap_entrypoint	Use the mounted UPF bootstrap that verifies Docker sysctls instead of writing them.
+PASS	upf_bootstrap_sysctls	Compose must configure IPv4 forwarding and enable IPv6 before UPF bootstrap.
+PASS	upf_bootstrap_environment	Explicitly configure tunnel addresses, UE subnet, and NAT behavior.
+PASS	upf_tunnel_address_alignment	UPF bootstrap IPv4 address/NAT subnet must match the configured UE gateway/pool; IPv6 must be valid.

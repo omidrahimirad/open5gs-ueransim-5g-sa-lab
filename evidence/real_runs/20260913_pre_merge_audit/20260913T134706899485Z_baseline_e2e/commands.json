@@ -1,0 +1,547 @@
+[
+  {
+    "args": [
+      "./scripts/collect_logs.sh"
+    ],
+    "returncode": 0,
+    "stdout": "[2026-09-13T13:47:07Z] Service log-init not created; skipping.\n[2026-09-13T13:47:07Z] Service ue not created; skipping.\n[2026-09-13T13:47:07Z] Service gnb not created; skipping.\n[2026-09-13T13:47:08Z] Service amf not created; skipping.\n[2026-09-13T13:47:08Z] Service ausf not created; skipping.\n[2026-09-13T13:47:08Z] Service udm not created; skipping.\n[2026-09-13T13:47:08Z] Service udr not created; skipping.\n[2026-09-13T13:47:08Z] Service bsf not created; skipping.\n[2026-09-13T13:47:08Z] Service pcf not created; skipping.\n[2026-09-13T13:47:09Z] Service smf not created; skipping.\n[2026-09-13T13:47:09Z] Service upf not created; skipping.\n[2026-09-13T13:47:09Z] Service nrf not created; skipping.\n[2026-09-13T13:47:09Z] Service mongodb not created; skipping.\n[2026-09-13T13:47:09Z] Service dn-server not created; skipping.\nCollected logs under /home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134706899485Z_baseline_e2e/pre_start_logs\n",
+    "stderr": "WARNING: unable to export nrf file log; see nf-files/nrf.error\nWARNING: unable to export ausf file log; see nf-files/ausf.error\nWARNING: unable to export udm file log; see nf-files/udm.error\nWARNING: unable to export udr file log; see nf-files/udr.error\nWARNING: unable to export bsf file log; see nf-files/bsf.error\nWARNING: unable to export pcf file log; see nf-files/pcf.error\nWARNING: unable to export amf file log; see nf-files/amf.error\nWARNING: unable to export smf file log; see nf-files/smf.error\nWARNING: unable to export upf file log; see nf-files/upf.error\n"
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "stop",
+      "ue",
+      "gnb"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "./scripts/start_lab.sh"
+    ],
+    "returncode": 0,
+    "stdout": "[2026-09-13T13:47:11Z] Starting MongoDB, Open5GS 5GC network functions, and internal DN target.\n[2026-09-13T13:47:27Z] Waiting for core initialization and a restart-free stability window.\nPASS core-ready: Core initialized, MongoDB healthy, NRF/PFCP associations ready, and no restarts for 30s; not baseline validation\n[2026-09-13T13:48:10Z] Core readiness passed. Inspect health/logs with:\n  docker compose ps\n  docker compose logs -f amf smf upf\n\n[2026-09-13T13:48:10Z] Provision subscriber before starting RAN/UE:\n  ./scripts/add_subscriber.sh\n\n[2026-09-13T13:48:10Z] Then start gNB, verify NG Setup, and only then start UE:\n  docker compose --profile ran up -d gnb\n  docker compose logs gnb\n  docker compose --profile ran up -d ue\n",
+    "stderr": " Network open5gs-core-net Creating \n Network open5gs-data-net Creating \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Creating \n Network open5gs-core-net Creating \n Network open5gs-data-net Creating \n Network open5gs-core-net Created \n Network open5gs-core-net Created \n Container open5gs-mongodb Creating \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Created \n Network open5gs-data-net Created \n Network open5gs-data-net Created \n Container open5gs-upf Creating \n Container open5gs-mongodb Created \n Container open5gs-nrf Creating \n Container open5gs-upf Created \n Container open5gs-dn-server Creating \n Container open5gs-nrf Created \n Container open5gs-udr Creating \n Container open5gs-bsf Creating \n Container open5gs-udm Creating \n Container open5gs-ausf Creating \n Container open5gs-dn-server Created \n Container open5gs-bsf Created \n Container open5gs-pcf Creating \n Container open5gs-udr Created \n Container open5gs-udm Created \n Container open5gs-ausf Created \n Container open5gs-pcf Created \n Container open5gs-smf Creating \n Container open5gs-amf Creating \n Container open5gs-smf Created \n Container open5gs-amf Created \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Starting \n Container open5gs-mongodb Starting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Started \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-mongodb Started \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-mongodb Waiting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-upf Starting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-upf Started \n Container open5gs-dn-server Starting \n Container open5gs-dn-server Started \n Container open5gs-mongodb Healthy \n Container open5gs-nrf Starting \n Container open5gs-nrf Started \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-mongodb Waiting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-bsf Starting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-udm Starting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-ausf Starting \n Container open5gs-mongodb Healthy \n Container open5gs-udr Starting \n Container open5gs-bsf Started \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-mongodb Waiting \n Container open5gs-udm Started \n Container open5gs-mongodb Healthy \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-ausf Started \n Container open5gs-pcf Starting \n Container open5gs-pcf Started \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-udr Started \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Waiting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-amf Starting \n Container open5gs-ueransim-5g-sa-lab-log-init-1 Exited \n Container open5gs-smf Starting \n Container open5gs-amf Started \n Container open5gs-smf Started \n"
+  },
+  {
+    "args": [
+      "./scripts/add_subscriber.sh"
+    ],
+    "returncode": 0,
+    "stdout": "[REDACTED: subscriber provisioning output retained only on VM]",
+    "stderr": "[REDACTED: subscriber provisioning output retained only on VM]"
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "up",
+      "-d",
+      "--no-deps",
+      "--force-recreate",
+      "gnb"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": " Container ueransim-gnb Creating \n Container ueransim-gnb Created \n Container ueransim-gnb Starting \n Container ueransim-gnb Started \n"
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "nr-cli",
+      "--dump"
+    ],
+    "returncode": 0,
+    "stdout": "UERANSIM-gnb-1-1-1\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "nr-cli",
+      "UERANSIM-gnb-1-1-1",
+      "--exec",
+      "status"
+    ],
+    "returncode": 0,
+    "stdout": "is-ngap-up: true\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "up",
+      "-d",
+      "--no-deps",
+      "--force-recreate",
+      "ue"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": " Container ueransim-ue Creating \n Container ueransim-ue Created \n Container ueransim-ue Starting \n Container ueransim-ue Started \n"
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps"
+    ],
+    "returncode": 0,
+    "stdout": "NAME                IMAGE                           COMMAND                  SERVICE         CREATED              STATUS                        PORTS\nopen5gs-amf         gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   amf             About a minute ago   Up About a minute             0.0.0.0:38412->38412/sctp, [::]:38412->38412/sctp\nopen5gs-ausf        gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   ausf            About a minute ago   Up About a minute             \nopen5gs-bsf         gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   bsf             About a minute ago   Up About a minute             \nopen5gs-dbctl       gradiant/open5gs-dbctl:0.10.3   \"sleep infinity\"         open5gs-dbctl   30 seconds ago       Up 29 seconds                 27017/tcp\nopen5gs-dn-server   busybox:1.37.0                  \"sh -c 'ip route add\u2026\"   dn-server       About a minute ago   Up About a minute             \nopen5gs-mongodb     mongo:8.3.8-noble               \"docker-entrypoint.s\u2026\"   mongodb         About a minute ago   Up About a minute (healthy)   27017/tcp\nopen5gs-nrf         gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   nrf             About a minute ago   Up About a minute             0.0.0.0:7777->7777/tcp, [::]:7777->7777/tcp\nopen5gs-pcf         gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   pcf             About a minute ago   Up About a minute             \nopen5gs-smf         gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   smf             About a minute ago   Up About a minute             \nopen5gs-udm         gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   udm             About a minute ago   Up About a minute             \nopen5gs-udr         gradiant/open5gs:2.8.0          \"/entrypoint.sh open\u2026\"   udr             About a minute ago   Up About a minute             \nopen5gs-upf         gradiant/open5gs:2.8.0          \"/bin/sh /lab/upf-en\u2026\"   upf             About a minute ago   Up About a minute             \nueransim-gnb        gradiant/ueransim:3.3.0         \"/usr/local/bin/nr-g\u2026\"   gnb             22 seconds ago       Up 21 seconds                 \nueransim-ue         gradiant/ueransim:3.3.0         \"/usr/local/bin/nr-u\u2026\"   ue              20 seconds ago       Up 20 seconds                 \n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "mongodb"
+    ],
+    "returncode": 0,
+    "stdout": "33663a0e195a023e74cf4211eff4abea7a6344b682eb4637ac9a21022fc42dd1\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "nrf"
+    ],
+    "returncode": 0,
+    "stdout": "cff5f54d65bf5d562a5eb396776b818c2c1515395c60abaa7933c03c5acb2039\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "ausf"
+    ],
+    "returncode": 0,
+    "stdout": "5d6f9c541b3adef2422855ff5518e7ef924cf3ab6ec6aad774d012c410fe875b\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "udm"
+    ],
+    "returncode": 0,
+    "stdout": "74aba67c0b12544aabd124a91daf22c7a48aa5aab2c443993451e4012321eab9\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "udr"
+    ],
+    "returncode": 0,
+    "stdout": "b20b2cd7b0fe398b1a0eaa6594e4ba36978363598a65dc844d7e85553056a39a\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "pcf"
+    ],
+    "returncode": 0,
+    "stdout": "551b4b107323de7cef4c0386068e4adb4b1326e56752c45174cbfe6349800cd0\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "bsf"
+    ],
+    "returncode": 0,
+    "stdout": "323d340895cf89b57fea53159c2cea3eba3a9d2a503eea88d74e2d322491fd3a\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "amf"
+    ],
+    "returncode": 0,
+    "stdout": "2e45a1f2358dd39585147cc858370bb1faf35f7a5a2d55bffd72f1caa2214925\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "smf"
+    ],
+    "returncode": 0,
+    "stdout": "50ea69c7dd4fed7677e067694747bb833f17a624446f8353fc2ada5b0f9ed39d\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "upf"
+    ],
+    "returncode": 0,
+    "stdout": "107a62d239bf6002c21d655f5f12adbf84e8b2ae7a806f3b9d26ec7b184edcf1\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "dn-server"
+    ],
+    "returncode": 0,
+    "stdout": "9eb41f2a88fcae5e4bbe9b3a0b2b9f937709f11aeb7b11a60e78918e54cec93b\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "gnb"
+    ],
+    "returncode": 0,
+    "stdout": "39af97c05dc3eece38fdc5f8a19bf7f1a0750c85d282fc6a0db07ec0a85ab5fd\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "--profile",
+      "ran",
+      "ps",
+      "--status",
+      "running",
+      "-q",
+      "ue"
+    ],
+    "returncode": 0,
+    "stdout": "a7b99841ee3ba3b5a9879dbad9e3cd2cf5a9b8c9c1d07a11dc26503b7d295bdf\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "nr-cli",
+      "--dump"
+    ],
+    "returncode": 0,
+    "stdout": "UERANSIM-gnb-1-1-1\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "nr-cli",
+      "UERANSIM-gnb-1-1-1",
+      "--exec",
+      "status"
+    ],
+    "returncode": 0,
+    "stdout": "is-ngap-up: true\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "--dump"
+    ],
+    "returncode": 0,
+    "stdout": "imsi-001010000000001\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "imsi-001010000000001",
+      "--exec",
+      "status"
+    ],
+    "returncode": 0,
+    "stdout": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "--dump"
+    ],
+    "returncode": 0,
+    "stdout": "imsi-001010000000001\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "imsi-001010000000001",
+      "--exec",
+      "ps-list"
+    ],
+    "returncode": 0,
+    "stdout": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "ip",
+      "link",
+      "show",
+      "uesimtun0"
+    ],
+    "returncode": 0,
+    "stdout": "3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500\n    link/none \n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "./scripts/traffic_test.sh"
+    ],
+    "returncode": 0,
+    "stdout": "[2026-09-13T13:48:45Z] Starting UE user-plane traffic test.\n[2026-09-13T13:48:45Z] Target=10.46.0.100, Count=5, UE_TUNNEL=uesimtun0\n[2026-09-13T13:48:46Z] Inspecting UE network interfaces.\n1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000\n    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00\n    inet 127.0.0.1/8 scope host lo\n       valid_lft forever preferred_lft forever\n    inet6 ::1/128 scope host \n       valid_lft forever preferred_lft forever\n2: eth0@if74: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default \n    link/ether 96:0b:f8:77:41:cc brd ff:ff:ff:ff:ff:ff link-netnsid 0\n    inet 10.45.0.50/24 brd 10.45.0.255 scope global eth0\n       valid_lft forever preferred_lft forever\n3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN group default qlen 500\n    link/none \n    inet 10.45.1.2/16 scope global uesimtun0\n       valid_lft forever preferred_lft forever\n    inet6 fe80::d536:e5ca:3c91:f5ac/64 scope link stable-privacy \n       valid_lft forever preferred_lft forever\n3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500\n    link/none \n[2026-09-13T13:48:46Z] Inspecting UE routes.\ndefault via 10.45.0.1 dev eth0 \n10.45.0.0/24 dev eth0 proto kernel scope link src 10.45.0.50 \n10.45.0.0/16 dev uesimtun0 proto kernel scope link src 10.45.1.2 \n[2026-09-13T13:48:47Z] Running interface-bound ping over UE tunnel.\nPING 10.46.0.100 (10.46.0.100) from 10.45.1.2 uesimtun0: 56(84) bytes of data.\n64 bytes from 10.46.0.100: icmp_seq=1 ttl=63 time=2.07 ms\n64 bytes from 10.46.0.100: icmp_seq=2 ttl=63 time=2.54 ms\n64 bytes from 10.46.0.100: icmp_seq=3 ttl=63 time=2.01 ms\n64 bytes from 10.46.0.100: icmp_seq=4 ttl=63 time=1.48 ms\n64 bytes from 10.46.0.100: icmp_seq=5 ttl=63 time=2.63 ms\n\n--- 10.46.0.100 ping statistics ---\n5 packets transmitted, 5 received, 0% packet loss, time 4005ms\nrtt min/avg/max/mdev = 1.478/2.143/2.625/0.413 ms\n[2026-09-13T13:48:51Z] iperf3 found. Run manually with an external/server-side iperf3 target when needed.\n[2026-09-13T13:48:51Z] USER_PLANE_SUCCESS: traffic test completed successfully.\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "nr-cli",
+      "--dump"
+    ],
+    "returncode": 0,
+    "stdout": "UERANSIM-gnb-1-1-1\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "nr-cli",
+      "UERANSIM-gnb-1-1-1",
+      "--exec",
+      "status"
+    ],
+    "returncode": 0,
+    "stdout": "is-ngap-up: true\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "--dump"
+    ],
+    "returncode": 0,
+    "stdout": "imsi-001010000000001\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "imsi-001010000000001",
+      "--exec",
+      "status"
+    ],
+    "returncode": 0,
+    "stdout": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "--dump"
+    ],
+    "returncode": 0,
+    "stdout": "imsi-001010000000001\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "ue",
+      "nr-cli",
+      "imsi-001010000000001",
+      "--exec",
+      "ps-list"
+    ],
+    "returncode": 0,
+    "stdout": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "inspect",
+      "--format",
+      "{{.Name}}|{{.State.Status}}|{{.RestartCount}}",
+      "ueransim-gnb",
+      "ueransim-ue"
+    ],
+    "returncode": 0,
+    "stdout": "/ueransim-gnb|running|0\n/ueransim-ue|running|0\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "./scripts/collect_logs.sh"
+    ],
+    "returncode": 0,
+    "stdout": "Collected logs under /home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134706899485Z_baseline_e2e/logs\n",
+    "stderr": ""
+  }
+]
