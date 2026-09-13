@@ -12,6 +12,8 @@ The audit started at `ca9f2c356fd1a97dd52d6abebbecc077391b0d08`. The historical 
 
 These changes do not alter subscriber authentication material, the declared lab topology, NF users/capabilities, or the historical evidence. Static/unit results and fresh Linux results must be reported separately.
 
+The clean VM retry at `230c692` exposed a separate false FAIL: the parser classified AMF's `Unknown UE by SUCI` lookup message as a registration rejection despite successful registration, PDU session, traffic, and final health. The [Open5GS context lookup](https://github.com/open5gs/open5gs/blob/v2.8.0/src/amf/context.c) logs this when the UE context is not yet known. The parser now requires rejection evidence and retains explicit Registration Reject/Illegal UE matching. The failed result remains on the VM; it is not rewritten to PASS.
+
 ## Review notes
 
 The initial secret scan used detect-secrets 1.5.0 with verification disabled across all 148 tracked files, plus content-based checks of all 77 PR paths. Its 89 candidates were public UERANSIM example values, a malformed-key regression fixture, notebook cell identifiers, and hashes/container identifiers. No cloud/OAuth/GitHub tokens, SSH key material, private provisioning output, public VM IP, or PCAP was found in the PR. The example key, OPc, authentication-management field, public SUCI key, and IMEI were checked against the pinned upstream UERANSIM example. The test subscriber uses the deliberately configured test identity `001010000000001`; it is not presented as a private SIM.

@@ -42,7 +42,9 @@ EVENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "registration_reject",
-        re.compile(r"\b(Registration reject|Registration rejected|Illegal UE|unknown UE)", re.I),
+        # Open5GS logs "Unknown UE by SUCI" for an initial context lookup miss;
+        # it can immediately proceed to successful registration. Require rejection evidence.
+        re.compile(r"\b(Registration reject|Registration rejected|Illegal UE)", re.I),
     ),
     (
         "registration_accept",

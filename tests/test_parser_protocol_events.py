@@ -62,3 +62,9 @@ def test_transport_component_and_negative_logs_cannot_prove_positive_protocol_ev
     line: str, forbidden: str
 ) -> None:
     assert forbidden not in classify_events(line)
+
+
+@pytest.mark.parametrize("identity", ["SUCI", "SUPI", "GUTI", "5G-S_TMSI"])
+def test_initial_context_lookup_miss_is_not_a_registration_reject(identity: str) -> None:
+    assert "registration_reject" not in classify_events(f"[amf] INFO Unknown UE by {identity}")
+    assert "registration_reject" in classify_events("[nas] Registration reject received")
