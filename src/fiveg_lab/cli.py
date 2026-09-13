@@ -19,6 +19,8 @@ from fiveg_lab.orchestration import run_runtime_scenario
 from fiveg_lab.parser import parse_file
 from fiveg_lab.preflight import checks_pass as preflight_checks_pass
 from fiveg_lab.preflight import run_preflight
+from fiveg_lab.readiness import wait_core_ready
+from fiveg_lab.runtime_preflight import capability_status, run_runtime_preflight
 from fiveg_lab.scenarios import load_scenario, load_scenarios
 
 RUNTIME_EXIT_CODES = {
@@ -41,6 +43,24 @@ def main(argv: list[str] | None = None) -> int:
         checks = run_preflight()
         print_checks(checks)
         return 0 if preflight_checks_pass(checks) else 1
+    if args.command == "core-ready":
+        ready = wait_core_ready(
+            Path(args.repo_root), timeout=args.timeout, stable_seconds=args.stable_seconds
+        )
+        if args.output:
+            ready.write(args.output)
+        print(f"{'PASS' if ready.passed else 'FAIL'} core-ready: {ready.detail}")
+        if not ready.passed:
+            for service, output in ready.logs.items():
+                print(f"{service}:\n{output[-4000:]}")
+        return 0 if ready.passed else 1
+    if args.command == "runtime-preflight":
+        runtime_checks = run_runtime_preflight(Path(args.repo_root), mongodb=args.mongodb)
+        for check in runtime_checks:
+            print(f"{check.status}\t{check.name}\t{check.detail}")
+        status = capability_status(runtime_checks)
+        print(f"{status} runtime-preflight (isolated capabilities only; not baseline validation)")
+        return runtime_exit_code(status)
     if args.command == "scenario":
         return handle_scenario(args)
     parser.print_help()
@@ -53,6 +73,18 @@ def build_parser() -> argparse.ArgumentParser:
     subcommands = parser.add_subparsers(dest="command")
     subcommands.add_parser("validate-config", help="Validate lab configuration consistency")
     subcommands.add_parser("preflight", help="Check Linux runtime prerequisites")
+    core = subcommands.add_parser(
+        "core-ready", help="Wait for bounded core initialization/stability"
+    )
+    core.add_argument("--timeout", type=int, default=120)
+    core.add_argument("--stable-seconds", type=int, default=30)
+    core.add_argument("--output", type=Path)
+    runtime_preflight = subcommands.add_parser(
+        "runtime-preflight", help="Check configured images in isolated Linux containers"
+    )
+    runtime_preflight.add_argument(
+        "--mongodb", action="store_true", help="Also smoke-test isolated MongoDB startup and ping"
+    )
     scenario = subcommands.add_parser("scenario", help="Scenario operations")
     scenario_subcommands = scenario.add_subparsers(dest="scenario_command", required=True)
     scenario_subcommands.add_parser("list", help="List scenario IDs")

@@ -1,0 +1,16 @@
+open5gs-udr  | 2026-09-13T13:47:26.396339152Z Open5GS daemon v2.8.0
+open5gs-udr  | 2026-09-13T13:47:26.396396502Z
+open5gs-udr  | 2026-09-13T13:47:26.397092755Z 09/13 13:47:26.396: [app] INFO: Configuration: '/opt/open5gs/etc/open5gs/udr.yaml' (../lib/app/ogs-init.c:144)
+open5gs-udr  | 2026-09-13T13:47:26.397126132Z 09/13 13:47:26.396: [app] INFO: File Logging: '/var/log/open5gs/udr.log' (../lib/app/ogs-init.c:147)
+open5gs-udr  | 2026-09-13T13:47:26.397134040Z 09/13 13:47:26.396: [app] INFO: LOG-LEVEL: 'info' (../lib/app/ogs-init.c:150)
+open5gs-udr  | 2026-09-13T13:47:26.402033724Z 09/13 13:47:26.401: [sbi] INFO: Setup NF EndPoint(addr) [10.45.0.11:7777] (../lib/sbi/context.c:451)
+open5gs-udr  | 2026-09-13T13:47:26.405557957Z 09/13 13:47:26.405: [dbi] INFO: MongoDB URI: 'mongodb://mongodb/open5gs' (../lib/dbi/ogs-mongoc.c:128)
+open5gs-udr  | 2026-09-13T13:47:26.405576555Z 09/13 13:47:26.405: [sbi] INFO: NF Service [nudr-dr] (../lib/sbi/context.c:2012)
+open5gs-udr  | 2026-09-13T13:47:26.406219289Z 09/13 13:47:26.405: [sbi] INFO: nghttp2_server() [http://10.45.0.24]:7777 (../lib/sbi/nghttp2-server.c:454)
+open5gs-udr  | 2026-09-13T13:47:26.406242958Z 09/13 13:47:26.406: [app] INFO: UDR initialize...done (../src/udr/app.c:31)
+open5gs-udr  | 2026-09-13T13:47:26.406828579Z 09/13 13:47:26.406: [sbi] WARNING: Couldn't connect to server (7): Failed to connect to 10.45.0.11 port 7777: Connection refused (../lib/sbi/client.c:767)
+open5gs-udr  | 2026-09-13T13:47:26.406844785Z 09/13 13:47:26.406: [sbi] WARNING: ogs_sbi_client_handler() failed [-1] (../lib/sbi/path.c:62)
+open5gs-udr  | 2026-09-13T13:47:37.417051793Z 09/13 13:47:37.416: [sbi] WARNING: [a7a99f16-af79-41f1-9b89-db04405dfb54] Retry registration with NRF (../lib/sbi/nf-sm.c:282)
+open5gs-udr  | 2026-09-13T13:47:37.420628882Z 09/13 13:47:37.419: [sbi] INFO: [a7a99f16-af79-41f1-9b89-db04405dfb54] NF registered [Heartbeat:10s] (../lib/sbi/nf-sm.c:368)
+open5gs-udr  | 2026-09-13T13:47:37.421584115Z 09/13 13:47:37.421: [sbi] INFO: Setup NF EndPoint(addr) [10.45.0.11:7777] (../lib/sbi/nnrf-handler.c:1113)
+open5gs-udr  | 2026-09-13T13:47:37.422388866Z 09/13 13:47:37.421: [sbi] INFO: [ae3b16b6-af79-41f1-a18e-451e2327f260] Subscription created until 2026-09-14T13:47:37.420842+00:00 [duration:86400000000,validity:86400.000000,patch:43200.000000] (../lib/sbi/nnrf-handler.c:1032)

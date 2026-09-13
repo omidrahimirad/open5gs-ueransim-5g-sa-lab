@@ -1,0 +1,190 @@
+[
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "filter",
+      "show",
+      "dev",
+      "eth0",
+      "egress",
+      "pref",
+      "2152"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "qdisc",
+      "show",
+      "dev",
+      "eth0"
+    ],
+    "returncode": 0,
+    "stdout": "qdisc noqueue 0: root refcnt 2 \n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "qdisc",
+      "add",
+      "dev",
+      "eth0",
+      "clsact"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "filter",
+      "add",
+      "dev",
+      "eth0",
+      "egress",
+      "protocol",
+      "ip",
+      "pref",
+      "2152",
+      "handle",
+      "0x4e33",
+      "flower",
+      "ip_proto",
+      "udp",
+      "dst_ip",
+      "10.45.0.30",
+      "dst_port",
+      "2152",
+      "action",
+      "drop"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "filter",
+      "show",
+      "dev",
+      "eth0",
+      "egress",
+      "pref",
+      "2152"
+    ],
+    "returncode": 0,
+    "stdout": "filter protocol ip flower chain 0 \nfilter protocol ip flower chain 0 handle 0x4e33 \n  eth_type ipv4\n  ip_proto udp\n  dst_ip 10.45.0.30\n  dst_port 2152\n  not_in_hw\n\taction order 1: gact action drop\n\t random type none pass val 0\n\t index 1 ref 1 bind 1\n\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "filter",
+      "del",
+      "dev",
+      "eth0",
+      "egress",
+      "protocol",
+      "ip",
+      "pref",
+      "2152",
+      "handle",
+      "0x4e33",
+      "flower"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "qdisc",
+      "del",
+      "dev",
+      "eth0",
+      "clsact"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "filter",
+      "show",
+      "dev",
+      "eth0",
+      "egress",
+      "pref",
+      "2152"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "docker",
+      "compose",
+      "exec",
+      "-T",
+      "gnb",
+      "tc",
+      "qdisc",
+      "show",
+      "dev",
+      "eth0"
+    ],
+    "returncode": 0,
+    "stdout": "qdisc noqueue 0: root refcnt 2 \n",
+    "stderr": ""
+  }
+]

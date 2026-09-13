@@ -21,6 +21,7 @@ logs/*
 !logs/*_sample.txt
 !logs/.gitkeep
 reports/runtime/
+runtime/
 evidence/capture_staging/
 
 # Local environment overrides

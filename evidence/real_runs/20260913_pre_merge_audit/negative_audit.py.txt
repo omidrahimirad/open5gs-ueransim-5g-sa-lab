@@ -1,0 +1,63 @@
+import json
+from pathlib import Path
+from unittest.mock import patch
+from fiveg_lab import orchestration as orch
+from fiveg_lab.scenarios import load_scenario
+
+root = Path.cwd()
+output = root / 'reports/runtime/audit'
+baselines = sorted(output.glob('*_baseline_e2e/scenario_result.json'))
+baseline = baselines[-1]
+assert json.loads(baseline.read_text())['status'] == 'PASS', baseline
+scenario = load_scenario(root / 'scenarios/n3_impairment.yaml')
+real_factory = orch.compose_runner
+real_command = orch.run_command
+
+for negative in (True,):
+    operations = []
+    injected = []
+    fixture = None
+    if negative:
+        fixture = root / 'runtime/logs/20260913T000000Z'
+        fixture.mkdir(parents=True, exist_ok=False)
+        (fixture / 'ue.log').write_text('[2026-09-01 00:00:00.000] USER_PLANE_FAILURE\n')
+        (fixture / 'README.txt').write_text('SYNTHETIC STALE FIXTURE for audit only. Not real runtime traffic evidence.\n')
+    def factory(repo):
+        runner = real_factory(repo)
+        def record(args, timeout):
+            result = runner(args, timeout)
+            operations.append({'args': list(args), 'returncode': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr})
+            return result
+        return record
+    def command(args, cwd, timeout, env=None):
+        if negative and env:
+            if args == ['./scripts/traffic_test.sh'] and env.get('OUT', '').endswith('/fault_traffic_result.txt'):
+                injected.append('current fault traffic probe: injected exit 127, no current artifact')
+                return orch.CommandOutcome(args, 127, '', 'Audit-injected current probe unavailability')
+            if args == ['./scripts/collect_logs.sh'] and env.get('OUT_DIR', '').endswith('/fault_logs'):
+                injected.append('current fault collector: injected exit 1, no current logs')
+                return orch.CommandOutcome(args, 1, '', 'Audit-injected current collector failure')
+        return real_command(args, cwd, timeout, env)
+    with patch.object(orch, 'compose_runner', factory), patch.object(orch, 'run_command', command):
+        result = orch.run_runtime_scenario(root, scenario, output, baseline, settle_seconds=20)
+    folder = output / result.run_id
+    (folder / 'fault_operations.json').write_text(json.dumps(operations, indent=2) + '\n')
+    (folder / 'audit_method.json').write_text(json.dumps({
+        'negative_oracle_probe': negative,
+        'baseline_result': str(baseline.relative_to(root)),
+        'fault_mutation': 'Real scoped tc mutation and rollback on the Linux VM',
+        'current_evidence_errors': injected,
+        'synthetic_stale_fixture': str(fixture.relative_to(root)) if fixture else None,
+        'fixture_content': (fixture / 'ue.log').read_text() if fixture else None,
+        'claim_limit': 'Negative probe deliberately simulates evidence tool failures; these errors are not spontaneous runtime failures.' if negative else 'All fault and traffic commands execute normally; wrapper journals tc outputs only.',
+    }, indent=2) + '\n')
+    print(json.dumps({'run_id': result.run_id, 'status': result.status, 'fault_verified': result.fault_verified, 'expected_failure_observed': result.expected_failure_observed, 'rollback_verified': result.rollback_verified, 'recovery_status': result.recovery_status, 'observed_events': result.observed_events, 'notes': result.notes, 'negative': negative}), flush=True)
+    if negative:
+        assert result.status == 'ERROR'
+        assert not result.expected_failure_observed
+        assert 'user_plane_failure' not in result.observed_events
+        assert len(injected) == 2
+    else:
+        assert result.status == 'PASS'
+        assert result.expected_failure_observed
+    assert result.fault_verified and result.rollback_verified and result.recovery_status == 'PASS'

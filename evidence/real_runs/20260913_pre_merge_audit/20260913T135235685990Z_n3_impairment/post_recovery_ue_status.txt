@@ -1,0 +1,23 @@
+command: docker compose exec -T ue nr-cli imsi-001010000000001 --exec status
+returncode: 0
+stdout:
+cm-state: CM-CONNECTED
+rm-state: RM-REGISTERED
+mm-state: MM-REGISTERED/NORMAL-SERVICE
+5u-state: 5U1-UPDATED
+sim-inserted: true
+selected-plmn: 001/01
+current-cell: 1
+current-plmn: 001/01
+current-tac: 1
+last-tai: PLMN[001/01] TAC[1]
+stored-suci: no-identity
+stored-guti:
+ plmn: 001/01
+ amf-region-id: 0x02
+ amf-set-id: 1
+ amf-pointer: 0
+ tmsi: 0xc00002da
+has-emergency: false
+
+stderr:

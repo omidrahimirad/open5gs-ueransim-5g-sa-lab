@@ -1,0 +1,3 @@
+open5gs-upf  | 2026-09-10T14:43:01.270725379Z 09/10 14:43:01.270: [upf] INFO: [Removed] Number of UPF-sessions is now 0 (../src/upf/context.c:256)
+open5gs-upf  | 2026-09-10T14:43:01.524509391Z 09/10 14:43:01.524: [upf] INFO: [Added] Number of UPF-Sessions is now 1 (../src/upf/context.c:212)
+open5gs-upf  | 2026-09-10T14:43:01.524534568Z 09/10 14:43:01.524: [upf] INFO: UE F-SEID[UP:0x1f6 CP:0x296] APN[internet] PDN-Type[1] IPv4[10.45.1.3] IPv6[] (../src/upf/context.c:498)

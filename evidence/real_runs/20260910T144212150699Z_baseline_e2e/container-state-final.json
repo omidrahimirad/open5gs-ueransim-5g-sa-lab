@@ -1,0 +1,221 @@
+[
+  {
+    "name": "/open5gs-amf",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:46.917505741Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-ausf",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:44.83699411Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-bsf",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:44.100407188Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-dbctl",
+    "image": "gradiant/open5gs-dbctl:0.10.3",
+    "image_id": "sha256:332031245fceb7714e295c235faf974dcb7ab5538bcbb51600bd219088602197",
+    "user": "open5gs",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:40:39.943596112Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-dn-server",
+    "image": "busybox:1.37.0",
+    "image_id": "sha256:9db7b59979c38555a39def84a31fb98b5296952f9e3afd4f6f11f05b07adfab0",
+    "user": "",
+    "privileged": false,
+    "cap_add": [
+      "CAP_NET_ADMIN"
+    ],
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:32.325787978Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-mongodb",
+    "image": "mongo:8.3.8-noble",
+    "image_id": "sha256:6ede2806c78ed28b2d30dd30802691382c925bc6c78cb12916828aafd1c1d282",
+    "user": "",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": "healthy",
+    "started_at": "2026-09-10T14:39:31.367772048Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-nrf",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:43.206449239Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-pcf",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:45.657877805Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-smf",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:46.539242853Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-udm",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:45.235725471Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-udr",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "999:999",
+    "privileged": false,
+    "cap_add": null,
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:44.498599338Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-ueransim-5g-sa-lab-log-init-1",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "0:0",
+    "privileged": false,
+    "cap_add": [
+      "CAP_CHOWN",
+      "CAP_DAC_OVERRIDE",
+      "CAP_FOWNER"
+    ],
+    "devices": null,
+    "status": "exited",
+    "health": null,
+    "started_at": "2026-09-10T14:42:21.265498504Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/open5gs-upf",
+    "image": "gradiant/open5gs:2.8.0",
+    "image_id": "sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187",
+    "user": "0:0",
+    "privileged": false,
+    "cap_add": [
+      "CAP_NET_ADMIN"
+    ],
+    "devices": [
+      {
+        "PathOnHost": "/dev/net/tun",
+        "PathInContainer": "/dev/net/tun",
+        "CgroupPermissions": "rwm"
+      }
+    ],
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:39:31.862579913Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/ueransim-gnb",
+    "image": "gradiant/ueransim:3.3.0",
+    "image_id": "sha256:875aaa4a713e6a9a2311cb779f8fd998cd3e57b6e9c8c946e118025b27e69a84",
+    "user": "",
+    "privileged": false,
+    "cap_add": [
+      "CAP_NET_ADMIN"
+    ],
+    "devices": null,
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:42:59.661897235Z",
+    "restart_count": 0
+  },
+  {
+    "name": "/ueransim-ue",
+    "image": "gradiant/ueransim:3.3.0",
+    "image_id": "sha256:875aaa4a713e6a9a2311cb779f8fd998cd3e57b6e9c8c946e118025b27e69a84",
+    "user": "0:0",
+    "privileged": false,
+    "cap_add": [
+      "CAP_NET_ADMIN"
+    ],
+    "devices": [
+      {
+        "PathOnHost": "/dev/net/tun",
+        "PathInContainer": "/dev/net/tun",
+        "CgroupPermissions": "rwm"
+      }
+    ],
+    "status": "running",
+    "health": null,
+    "started_at": "2026-09-10T14:43:01.050027386Z",
+    "restart_count": 0
+  }
+]

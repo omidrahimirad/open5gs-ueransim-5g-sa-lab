@@ -17,8 +17,8 @@ EVENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "ng_setup",
         re.compile(
-            r"\b(NG[- ]?Setup|NGSetup|gNB.*(connect|accepted)|"
-            r"SCTP.*(connect|established|association))",
+            r"\bNG[- ]?Setup(?: procedure)? "
+            r"(?:is successful|completed|successful|accepted|Response received)",
             re.I,
         ),
     ),
@@ -34,21 +34,23 @@ EVENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "authentication",
-        re.compile(r"\b(Authentication (request|response|successful)|AUSF|auth[- ]?vector)", re.I),
+        re.compile(r"\bAuthentication (request|response|successful)", re.I),
     ),
     (
         "security_mode",
-        re.compile(r"\b(Security mode (command|complete|reject)|Security Mode|NAS security)", re.I),
+        re.compile(r"\bSecurity mode (command|complete)", re.I),
     ),
     (
         "registration_reject",
-        re.compile(r"\b(Registration reject|Registration rejected|Illegal UE|unknown UE)", re.I),
+        # Open5GS logs "Unknown UE by SUCI" for an initial context lookup miss;
+        # it can immediately proceed to successful registration. Require rejection evidence.
+        re.compile(r"\b(Registration reject|Registration rejected|Illegal UE)", re.I),
     ),
     (
         "registration_accept",
         re.compile(
             r"\b(Registration accept|Registration complete|Registration Accept|"
-            r"Registration Complete|registered)",
+            r"Registration Complete|Registration is successful|UE registered)",
             re.I,
         ),
     ),
@@ -97,7 +99,9 @@ EVENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "user_plane_success",
-        re.compile(r"\b(USER_PLANE_SUCCESS|ping.*0% packet loss|traffic test completed)", re.I),
+        re.compile(
+            r"\b(USER_PLANE_SUCCESS|ping.*(?<!\d)0% packet loss|traffic test completed)", re.I
+        ),
     ),
     (
         "user_plane_failure",
@@ -139,6 +143,18 @@ RELEVANT_BUT_UNCLASSIFIED_RE = re.compile(
     re.I,
 )
 ALL_EVENT_NAMES = {name for name, _pattern in EVENT_PATTERNS} | {"unclassified_relevant"}
+POSITIVE_EVENTS = {
+    "ng_setup",
+    "authentication",
+    "security_mode",
+    "registration_accept",
+    "pdu_session_accept",
+    "ue_tunnel_created",
+    "user_plane_success",
+}
+NEGATIVE_OUTCOME = re.compile(
+    r"\b(failed|failure|FATAL|reject(?:ed)?|denied|not found|does not exist|no such)\b", re.I
+)
 
 
 @dataclass(frozen=True)
@@ -207,7 +223,9 @@ def infer_severity(line: str) -> str:
 def classify_events(line: str) -> list[str]:
     events: list[str] = []
     for event, pattern in EVENT_PATTERNS:
-        if pattern.search(line):
+        if pattern.search(line) and not (
+            event in POSITIVE_EVENTS and NEGATIVE_OUTCOME.search(line)
+        ):
             events.append(event)
     return events
 

@@ -1,0 +1,306 @@
+{
+  "scenario_id": "n3_impairment",
+  "run_id": "20260913T134948542881Z_n3_impairment",
+  "started_at": "2026-09-13T13:49:48.542881Z",
+  "status": "PASS",
+  "baseline_ready": true,
+  "fault_applied": true,
+  "expected_failure_observed": true,
+  "recovery_attempted": true,
+  "recovery_status": "PASS",
+  "observed_events": [
+    "error",
+    "ue_tunnel_created",
+    "unclassified_relevant",
+    "user_plane_failure"
+  ],
+  "assertions": [
+    {
+      "name": "expected_event:user_plane_failure",
+      "status": "PASS",
+      "expected": "user_plane_failure observed",
+      "observed": "observed",
+      "detail": "Expected event evidence was present."
+    }
+  ],
+  "baseline_context_fingerprint": "77c083a3dd5f2aaa44c94ade87a4026a6d1fc58099ce07c9ba06b89a2b420636",
+  "fault_verified": true,
+  "rollback_verified": true,
+  "recovery_assertions": [
+    {
+      "name": "recovery:required_lab_services_running",
+      "status": "PASS",
+      "expected": "all required 5GC, RAN, UE, and DN services running",
+      "observed": "all running",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:n2_ready",
+      "status": "PASS",
+      "expected": "UERANSIM gNB reports is-ngap-up: true",
+      "observed": "is-ngap-up: true",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:ue_registered",
+      "status": "PASS",
+      "expected": "UERANSIM UE reports RM-REGISTERED",
+      "observed": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:pdu_session_active",
+      "status": "PASS",
+      "expected": "UERANSIM UE reports a PS-ACTIVE PDU session",
+      "observed": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:ue_tunnel_exists",
+      "status": "PASS",
+      "expected": "uesimtun0 exists in the UE container",
+      "observed": "3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500\n    link/none",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:user_plane_dn_traffic",
+      "status": "PASS",
+      "expected": "interface-bound traffic reaches the lab DN target",
+      "observed": "success",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:final_core_ready",
+      "status": "PASS",
+      "expected": "initialized core, MongoDB healthy, current associations, zero restarts for 30s",
+      "observed": "Core initialized, MongoDB healthy, NRF/PFCP associations ready, and no restarts for 30s; not baseline validation",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:final_gnb_status",
+      "status": "PASS",
+      "expected": "is-ngap-up:\\s*true(?:\\s|$)",
+      "observed": "is-ngap-up: true",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:final_ue_status",
+      "status": "PASS",
+      "expected": "rm-state:\\s*RM-REGISTERED(?:\\s|$)",
+      "observed": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:final_ue_ps-list",
+      "status": "PASS",
+      "expected": "state:\\s*PS-ACTIVE(?:\\s|$)",
+      "observed": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false",
+      "detail": "Runtime state matched the current baseline invariant."
+    },
+    {
+      "name": "recovery:final_ran_running_without_restarts",
+      "status": "PASS",
+      "expected": "both RAN containers running with zero restarts",
+      "observed": "/ueransim-gnb|running|0\n/ueransim-ue|running|0",
+      "detail": "Runtime state matched the current baseline invariant."
+    }
+  ],
+  "recovery_verified": true,
+  "evidence": [
+    {
+      "kind": "runtime_manifest",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/environment.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Environment metadata captured at scenario start."
+    },
+    {
+      "kind": "runtime_versions",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/versions.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Pinned runtime image defaults and execution context."
+    },
+    {
+      "kind": "runtime_context",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/runtime_context.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Context used to bind the baseline gate to this runtime."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_traffic_result.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_boundary.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/amf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/ausf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/bsf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/dn-server.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/gnb.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/log-init.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/mongodb.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/nrf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/pcf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/smf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/udm.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/udr.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/ue.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/fault_logs/upf.log",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/post_recovery_compose_ps.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/post_recovery_gnb_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/post_recovery_ue_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/post_recovery_pdu_sessions.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/post_recovery_ue_tunnel.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_traffic_result.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_assertions.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_final_core_readiness.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_final_gnb_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_final_ue_status.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_final_ue_ps-list.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_final_ran_containers.txt",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    },
+    {
+      "kind": "runtime_output",
+      "path": "/home/omid_rahimirad/open5gs-ueransim-5g-sa-lab/reports/runtime/audit/20260913T134948542881Z_n3_impairment/recovery_final_health_timing.json",
+      "claim_level": "RUNTIME VERIFIED",
+      "description": "Runtime command output generated during scenario execution."
+    }
+  ],
+  "notes": [
+    "Command failed: ./scripts/traffic_test.sh"
+  ]
+}

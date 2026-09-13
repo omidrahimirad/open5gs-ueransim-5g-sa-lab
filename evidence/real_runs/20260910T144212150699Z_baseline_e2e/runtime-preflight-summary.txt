@@ -1,0 +1,56 @@
+PASS	docker_runtime	linux/amd64
+PASS	log-init_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	nrf_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	ausf_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	udm_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	udr_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	bsf_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	pcf_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	amf_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	smf_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	upf_image	gradiant/open5gs:2.8.0: linux/amd64 sha256:1942954babfe6dd5094c8047d8dec26009c67168471115136cd0195a3dc11187
+PASS	mongodb_image	mongo:8.3.8-noble: linux/amd64 sha256:6ede2806c78ed28b2d30dd30802691382c925bc6c78cb12916828aafd1c1d282
+PASS	runtime_log_volume	Persistent lab log volume (retained): open5gs-ueransim-5g-sa-lab_open5gs-logs
+PASS	log-init_init	container=open5gs-runtime-preflight-abd34501510845859187634d800d3158; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-abd34501510845859187634d800d3158
+PASS	nrf_logs	container=open5gs-runtime-preflight-0cd7aca0be56420fbdceffc6fc1155f5; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-0cd7aca0be56420fbdceffc6fc1155f5
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-0cd7aca0be56420fbdceffc6fc1155f5; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-0cd7aca0be56420fbdceffc6fc1155f5-cleanup
+PASS	ausf_logs	container=open5gs-runtime-preflight-8a0fbb2b6b80417ba03a5f62b262498d; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-8a0fbb2b6b80417ba03a5f62b262498d
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-8a0fbb2b6b80417ba03a5f62b262498d; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-8a0fbb2b6b80417ba03a5f62b262498d-cleanup
+PASS	udm_logs	container=open5gs-runtime-preflight-325995fe1c934ec1b6d0dfac227a0cab; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-325995fe1c934ec1b6d0dfac227a0cab
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-325995fe1c934ec1b6d0dfac227a0cab; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-325995fe1c934ec1b6d0dfac227a0cab-cleanup
+PASS	udr_logs	container=open5gs-runtime-preflight-51fffb5df2924b56a6be0fa5bd32ac57; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-51fffb5df2924b56a6be0fa5bd32ac57
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-51fffb5df2924b56a6be0fa5bd32ac57; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-51fffb5df2924b56a6be0fa5bd32ac57-cleanup
+PASS	bsf_logs	container=open5gs-runtime-preflight-edbbb0a940ff45e592b93f6f2a870d8f; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-edbbb0a940ff45e592b93f6f2a870d8f
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-edbbb0a940ff45e592b93f6f2a870d8f; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-edbbb0a940ff45e592b93f6f2a870d8f-cleanup
+PASS	pcf_logs	container=open5gs-runtime-preflight-47ac634356464307961ef5a50f235178; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-47ac634356464307961ef5a50f235178
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-47ac634356464307961ef5a50f235178; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-47ac634356464307961ef5a50f235178-cleanup
+PASS	amf_logs	container=open5gs-runtime-preflight-30ba88d6b22948888b5dc0f40cd80f56; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-30ba88d6b22948888b5dc0f40cd80f56
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-30ba88d6b22948888b5dc0f40cd80f56; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-30ba88d6b22948888b5dc0f40cd80f56-cleanup
+PASS	smf_logs	container=open5gs-runtime-preflight-5ab3ad4e61e64710aceb401d750cb244; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-5ab3ad4e61e64710aceb401d750cb244
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-5ab3ad4e61e64710aceb401d750cb244; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-5ab3ad4e61e64710aceb401d750cb244-cleanup
+PASS	upf_logs	container=open5gs-runtime-preflight-5ae9c7e4443741478f59ff5129ee0759; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-5ae9c7e4443741478f59ff5129ee0759
+PASS	probe_file_cleanup	file=/var/log/open5gs/open5gs-runtime-preflight-5ae9c7e4443741478f59ff5129ee0759; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-5ae9c7e4443741478f59ff5129ee0759-cleanup
+PASS	upf_bootstrap	container=open5gs-runtime-preflight-e89ef3f19ee84f74844624d359221fab; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-e89ef3f19ee84f74844624d359221fab
+PASS	mongodb_mongo	container=open5gs-runtime-preflight-afa6820fee224b6b87a50dbb0d1cfe35; exit=0
+PASS	probe_cleanup	Container absent: open5gs-runtime-preflight-afa6820fee224b6b87a50dbb0d1cfe35
+PASS runtime-preflight (isolated capabilities only; not baseline validation)

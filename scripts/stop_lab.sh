@@ -10,6 +10,7 @@ docker compose --profile ran --profile tools down
 cat <<'MSG'
 
 Persistent MongoDB data is kept in the named Docker volume mongodb-data.
+Application logs are kept in open5gs-logs; export failed-run evidence before removal.
 To remove it after exporting evidence, run:
   docker volume rm open5gs-ueransim-5g-sa-lab_mongodb-data
 MSG

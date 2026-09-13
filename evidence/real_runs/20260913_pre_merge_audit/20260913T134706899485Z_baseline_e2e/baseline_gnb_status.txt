@@ -1,0 +1,6 @@
+command: docker compose exec -T gnb nr-cli UERANSIM-gnb-1-1-1 --exec status
+returncode: 0
+stdout:
+is-ngap-up: true
+
+stderr:

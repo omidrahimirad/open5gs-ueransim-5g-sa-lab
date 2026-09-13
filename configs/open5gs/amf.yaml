@@ -45,3 +45,6 @@ amf:
     full: Open5GS UERANSIM SA Lab
     short: O5GS-LAB
   amf_name: open5gs-amf0
+  time:
+    t3512:
+      value: 540  # Required by Open5GS 2.8.0; upstream default is 9 minutes.

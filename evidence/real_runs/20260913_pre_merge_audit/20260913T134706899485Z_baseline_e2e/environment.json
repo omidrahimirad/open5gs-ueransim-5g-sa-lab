@@ -1,0 +1,9 @@
+{
+  "timestamp_utc": "2026-09-13T13:47:07.176224Z",
+  "os": "Linux-7.0.0-1011-gcp-x86_64-with-glibc2.39",
+  "kernel": "7.0.0-1011-gcp",
+  "python": "3.11.16",
+  "git_commit": "daca4542608f0bb20ca01441f5e584ce89890ad1",
+  "scenario_id": "baseline_e2e",
+  "runtime_claim": "REAL LINUX RUNTIME PENDING unless collected on a capable Linux host"
+}

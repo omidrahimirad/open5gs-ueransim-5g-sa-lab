@@ -1,0 +1,9 @@
+{
+  "negative_oracle_probe": false,
+  "baseline_result": "reports/runtime/audit/20260913T134706899485Z_baseline_e2e/scenario_result.json",
+  "fault_mutation": "Real scoped tc mutation and rollback on the Linux VM",
+  "current_evidence_errors": [],
+  "synthetic_stale_fixture": null,
+  "fixture_content": null,
+  "claim_limit": "All fault and traffic commands execute normally; wrapper journals tc outputs only."
+}

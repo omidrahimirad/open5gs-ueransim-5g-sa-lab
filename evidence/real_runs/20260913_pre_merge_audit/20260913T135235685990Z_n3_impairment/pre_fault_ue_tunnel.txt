@@ -1,0 +1,7 @@
+command: docker compose exec -T ue ip link show uesimtun0
+returncode: 0
+stdout:
+3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500
+    link/none
+
+stderr:

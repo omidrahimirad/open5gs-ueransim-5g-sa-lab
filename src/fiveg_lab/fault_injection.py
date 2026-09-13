@@ -59,6 +59,7 @@ class FaultInjector:
     cleanup_required: bool = False
     last_verification_error: str | None = None
     _created_clsact: bool = False
+    _filter_cleanup_required: bool = False
     _restart_started_at: str | None = None
 
     def apply(self) -> None:
@@ -73,12 +74,13 @@ class FaultInjector:
                 msg = f"cannot restart {service}: container is not running"
                 raise RuntimeError(msg)
             self._restart_started_at = before.started_at
+            self.cleanup_required = True
             self._run(self.apply_commands()[0])
             self.applied = True
             return
         if fault_type == "stop_service":
-            self._run(self.apply_commands()[0])
             self.cleanup_required = True
+            self._run(self.apply_commands()[0])
             self.applied = True
             return
         if fault_type in IMPAIRMENT_RULES:
@@ -120,12 +122,27 @@ class FaultInjector:
             return False
 
     def remove(self) -> None:
+        if not self.applied and not self.cleanup_required:
+            return
         errors: list[str] = []
         for command in self.rollback_commands():
+            if "filter" in command and not self._filter_cleanup_required:
+                continue
             try:
                 self._run(command)
             except RuntimeError as exc:
-                errors.append(str(exc))
+                # A partially completed add may have created nothing. Verify
+                # exact absence before accepting a failed deletion as cleanup.
+                try:
+                    absent = self.fault.type in IMPAIRMENT_RULES and (
+                        not self._run(self._filter_show_command(), timeout=10).stdout.strip()
+                        if "filter" in command
+                        else not self._clsact_present()
+                    )
+                except RuntimeError:
+                    absent = False
+                if not absent:
+                    errors.append(str(exc))
         if errors:
             raise RuntimeError("; ".join(errors))
         self.applied = False
@@ -140,7 +157,7 @@ class FaultInjector:
                 state = self._container_state(validated_service(self.fault.target))
                 return state is not None and state.running and state.health != "unhealthy"
             if self.fault.type in IMPAIRMENT_RULES:
-                rule_removed = not self._impairment_rule_present()
+                rule_removed = not self._run(self._filter_show_command(), timeout=10).stdout.strip()
                 if not self._created_clsact:
                     return rule_removed
                 return rule_removed and not self._clsact_present()
@@ -171,9 +188,9 @@ class FaultInjector:
 
     def rollback_commands(self) -> list[Command]:
         fault_type = self.fault.type
-        if fault_type in {"none", "restart_service"}:
+        if fault_type == "none":
             return []
-        if fault_type == "stop_service":
+        if fault_type in {"stop_service", "restart_service"}:
             return [("docker", "compose", "start", validated_service(self.fault.target))]
         if fault_type in IMPAIRMENT_RULES:
             commands = [self._filter_delete_command()]
@@ -183,12 +200,15 @@ class FaultInjector:
         return []
 
     def _apply_impairment(self) -> None:
+        if self._run(self._filter_show_command(), timeout=10).stdout.strip():
+            raise RuntimeError("Refusing to replace an existing filter at the lab preference")
         if not self._clsact_present():
-            self._run(self._clsact_add_command())
             self._created_clsact = True
             self.cleanup_required = True
-        self._run(self._filter_add_command())
+            self._run(self._clsact_add_command())
         self.cleanup_required = True
+        self._filter_cleanup_required = True
+        self._run(self._filter_add_command())
         self.applied = True
 
     def _container_state(self, service: str) -> ContainerState | None:
@@ -356,9 +376,9 @@ def validated_interface(interface: str) -> str:
 
 
 def run_with_fault_cleanup(injector: FaultInjector, body: FaultBody) -> None:
-    injector.apply()
     body_error: BaseException | None = None
     try:
+        injector.apply()
         body()
     except BaseException as exc:
         body_error = exc

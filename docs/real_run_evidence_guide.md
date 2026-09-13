@@ -61,7 +61,7 @@ Collect logs after the UE has attempted registration:
 
 ```bash
 ./scripts/collect_logs.sh | tee "evidence/real_runs/${RUN_ID}/outputs/collect_logs.txt"
-LATEST_LOG_DIR="$(find logs -maxdepth 1 -type d -name '20*T*Z' | sort | tail -n 1)"
+LATEST_LOG_DIR="$(find runtime/logs -maxdepth 1 -type d -name '20*T*Z' | sort | tail -n 1)"
 cp -R "${LATEST_LOG_DIR}" "evidence/real_runs/${RUN_ID}/logs/"
 ```
 
@@ -102,7 +102,7 @@ Paste into reports:
 
 ```bash
 ./scripts/traffic_test.sh | tee "evidence/real_runs/${RUN_ID}/outputs/traffic_test_console.txt"
-cp logs/traffic_test_result.txt "evidence/real_runs/${RUN_ID}/outputs/traffic_test_result.txt"
+cp runtime/traffic_test_result.txt "evidence/real_runs/${RUN_ID}/outputs/traffic_test_result.txt"
 docker compose exec -T ue ip addr | tee "evidence/real_runs/${RUN_ID}/outputs/ue_ip_addr.txt"
 docker compose exec -T ue ip route | tee "evidence/real_runs/${RUN_ID}/outputs/ue_ip_route.txt"
 ```

@@ -1,3 +1,6 @@
+# db_uri is a root key; DB_URI in Compose takes precedence and must match.
+db_uri: mongodb://mongodb/open5gs
+
 logger:
   file:
     path: /var/log/open5gs/udr.log
@@ -8,7 +11,6 @@ global:
     ue: 1024
 
 udr:
-  db_uri: mongodb://mongodb/open5gs
   sbi:
     server:
       - address: 10.45.0.24

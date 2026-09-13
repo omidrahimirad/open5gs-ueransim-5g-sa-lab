@@ -1,0 +1,79 @@
+[
+  {
+    "name": "pre_fault:required_lab_services_running",
+    "status": "PASS",
+    "expected": "all required 5GC, RAN, UE, and DN services running",
+    "observed": "all running",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:n2_ready",
+    "status": "PASS",
+    "expected": "UERANSIM gNB reports is-ngap-up: true",
+    "observed": "is-ngap-up: true",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:ue_registered",
+    "status": "PASS",
+    "expected": "UERANSIM UE reports RM-REGISTERED",
+    "observed": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:pdu_session_active",
+    "status": "PASS",
+    "expected": "UERANSIM UE reports a PS-ACTIVE PDU session",
+    "observed": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:ue_tunnel_exists",
+    "status": "PASS",
+    "expected": "uesimtun0 exists in the UE container",
+    "observed": "3: uesimtun0: <POINTOPOINT,PROMISC,NOTRAILERS,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500\n    link/none",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:user_plane_dn_traffic",
+    "status": "PASS",
+    "expected": "interface-bound traffic reaches the lab DN target",
+    "observed": "success",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:final_core_ready",
+    "status": "PASS",
+    "expected": "initialized core, MongoDB healthy, current associations, zero restarts for 30s",
+    "observed": "Core initialized, MongoDB healthy, NRF/PFCP associations ready, and no restarts for 30s; not baseline validation",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:final_gnb_status",
+    "status": "PASS",
+    "expected": "is-ngap-up:\\s*true(?:\\s|$)",
+    "observed": "is-ngap-up: true",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:final_ue_status",
+    "status": "PASS",
+    "expected": "rm-state:\\s*RM-REGISTERED(?:\\s|$)",
+    "observed": "cm-state: CM-CONNECTED\nrm-state: RM-REGISTERED\nmm-state: MM-REGISTERED/NORMAL-SERVICE\n5u-state: 5U1-UPDATED\nsim-inserted: true\nselected-plmn: 001/01\ncurrent-cell: 1\ncurrent-plmn: 001/01\ncurrent-tac: 1\nlast-tai: PLMN[001/01] TAC[1]\nstored-suci: no-identity\nstored-guti: \n plmn: 001/01\n amf-region-id: 0x02\n amf-set-id: 1\n amf-pointer: 0\n tmsi: 0xc00002da\nhas-emergency: false",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:final_ue_ps-list",
+    "status": "PASS",
+    "expected": "state:\\s*PS-ACTIVE(?:\\s|$)",
+    "observed": "PDU Session1: \n state: PS-ACTIVE\n session-type: IPv4\n apn: internet\n s-nssai: \n  sst: 0x01\n  sd: 0x000001\n emergency: false\n address: 10.45.1.2\n ambr: up[1000000Kb/s] down[1000000Kb/s]\n data-pending: false",
+    "detail": "Runtime state matched the current baseline invariant."
+  },
+  {
+    "name": "pre_fault:final_ran_running_without_restarts",
+    "status": "PASS",
+    "expected": "both RAN containers running with zero restarts",
+    "observed": "/ueransim-gnb|running|0\n/ueransim-ue|running|0",
+    "detail": "Runtime state matched the current baseline invariant."
+  }
+]

@@ -18,6 +18,7 @@ REQUIRED_NFS = {
     "udm",
     "udr",
     "pcf",
+    "bsf",
     "amf",
     "smf",
     "upf",
@@ -25,6 +26,14 @@ REQUIRED_NFS = {
     "ue",
     "dn-server",
 }
+OPEN5GS_NFS = ("nrf", "ausf", "udm", "udr", "bsf", "pcf", "amf", "smf", "upf")
+LAB_SBI_PORT = 7777
+LOG_VOLUME = "open5gs-logs"
+LOG_TARGET = "/var/log/open5gs"
+UPF_ENTRYPOINT = ["/bin/sh", "/lab/upf-entrypoint.sh"]
+LOG_INIT_ENTRYPOINT = ["/bin/sh", "/lab/prepare-runtime-logs.sh"]
+LAB_DB_URI = "mongodb://mongodb/open5gs"
+GPRS_TIMER_3_MAX_VALUE = 31
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -89,7 +98,14 @@ def validate_repo(repo_root: Path) -> list[Check]:
             f"services={sorted(service_names)}",
         )
     )
-    checks.extend(validate_open5gs_2_8_policy_and_slice_selection(compose, amf, smf, pcf))
+    checks.extend(
+        validate_open5gs_2_8_policy_and_slice_selection(compose, amf, smf, pcf)
+        + validate_open5gs_startup_contract(
+            compose, amf, pcf, load_yaml(repo_root / "configs/open5gs/udr.yaml")
+        )
+        + validate_ueransim_ue_startup_contract(ue)
+        + validate_bsf_contract(compose, load_yaml(repo_root / "configs/open5gs/bsf.yaml"))
+    )
 
     compose_ips = collect_static_ips(services)
     checks.append(
@@ -252,7 +268,222 @@ def validate_repo(repo_root: Path) -> list[Check]:
     )
 
     checks.extend(validate_image_defaults(compose))
+    checks.extend(
+        validate_container_runtime_contract(compose) + validate_upf_address_alignment(compose, upf)
+    )
     return checks
+
+
+def compose_environment(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return cast("dict[str, Any]", value)
+    if isinstance(value, list):
+        return {
+            item.partition("=")[0]: item.partition("=")[2]
+            for item in value
+            if isinstance(item, str) and "=" in item
+        }
+    return {}
+
+
+def exposes_tun_device(devices: Any) -> bool:
+    if not isinstance(devices, list):
+        return False
+    for device in devices:
+        if isinstance(device, str):
+            parts = device.split(":")
+            if len(parts) not in {2, 3}:
+                continue
+            source, target, *permission_fields = parts
+            permissions = permission_fields[0] if permission_fields else "rwm"
+        elif isinstance(device, dict):
+            source = str(device.get("source", ""))
+            target = str(device.get("target", ""))
+            permissions = str(device.get("permissions", "rwm"))
+        else:
+            continue
+        if source == target == "/dev/net/tun" and {"r", "w"} <= set(permissions):
+            return True
+    return False
+
+
+def validate_container_runtime_contract(compose: dict[str, Any]) -> list[Check]:
+    """Protect declared bootstrap settings; this does not prove runtime capability."""
+    mongo_env = compose_environment(nested(compose, "services", "mongodb", "environment"))
+    upf = nested(compose, "services", "upf")
+    if not isinstance(upf, dict):
+        upf = {}
+    capabilities = upf.get("cap_add", [])
+    return (
+        [
+            check(
+                "mongodb_kernel_rseq_compatibility",
+                mongo_env.get("GLIBC_TUNABLES") == "glibc.pthread.rseq=1",
+                "MongoDB must explicitly set GLIBC_TUNABLES=glibc.pthread.rseq=1 for the "
+                "Linux kernel compatibility workaround validated on the external VM",
+            ),
+            check(
+                "upf_explicit_root_user",
+                upf.get("user") == "0:0",
+                "UPF must use user 0:0; the image default uid 999 lacked effective "
+                "TUN capabilities",
+            ),
+            check(
+                "upf_net_admin_capability",
+                isinstance(capabilities, list) and "NET_ADMIN" in capabilities,
+                "UPF must add NET_ADMIN to create ogstun; verify effective capability with "
+                "runtime-preflight on Linux",
+            ),
+            check(
+                "upf_tun_device",
+                exposes_tun_device(upf.get("devices")),
+                "UPF must expose /dev/net/tun at /dev/net/tun with read/write access",
+            ),
+            check(
+                "upf_without_privileged",
+                "privileged" not in upf or upf["privileged"] is False,
+                "UPF must omit privileged or set it false; root + NET_ADMIN + TUN passed the "
+                "isolated external VM TUN test",
+            ),
+        ]
+        + validate_logging_contract(compose)
+        + validate_upf_bootstrap_contract(upf)
+    )
+
+
+def mount_at(service: Any, target: str) -> dict[str, Any]:
+    volumes = nested(service, "volumes")
+    if not isinstance(volumes, list):
+        return {}
+    for item in volumes:
+        mount = item
+        if isinstance(mount, str):
+            parts = mount.split(":")
+            if len(parts) not in {2, 3}:
+                continue
+            source, destination = parts[:2]
+            mount = {
+                "source": source,
+                "target": destination,
+                "type": "bind" if source.startswith((".", "/", "~")) else "volume",
+                "read_only": bool(parts[2:]) and "ro" in parts[2].split(","),
+            }
+        if isinstance(mount, dict) and mount.get("target") == target:
+            return cast("dict[str, Any]", mount)
+    return {}
+
+
+def readonly_script(service: Any, target: str, filename: str) -> bool:
+    mount = mount_at(service, target)
+    return (
+        mount.get("type") == "bind"
+        and mount.get("read_only") is True
+        and str(mount.get("source", "")).endswith("/scripts/" + filename)
+    )
+
+
+def validate_logging_contract(compose: dict[str, Any]) -> list[Check]:
+    volume = nested(compose, "volumes", LOG_VOLUME)
+    volume = {} if volume is None else volume
+    volume_ok = isinstance(volume, dict) and set(volume) <= {"name"}
+    if isinstance(volume, dict) and "name" in volume:
+        volume_ok = volume_ok and volume["name"] == f"{compose.get('name')}_{LOG_VOLUME}"
+    init = nested(compose, "services", "log-init") or {}
+    checks = [
+        check(
+            "runtime_log_initializer",
+            LOG_VOLUME in (compose.get("volumes") or {})
+            and volume_ok
+            and init.get("user") == "0:0"
+            and init.get("network_mode") == "none"
+            and init.get("read_only") is True
+            and not init.get("privileged", False)
+            and init.get("cap_drop") == ["ALL"]
+            and set(init.get("cap_add", [])) == {"CHOWN", "FOWNER", "DAC_OVERRIDE"}
+            and init.get("entrypoint") == LOG_INIT_ENTRYPOINT
+            and readonly_script(init, LOG_INIT_ENTRYPOINT[1], "prepare_runtime_logs.sh"),
+            "Prepare only the Docker-managed runtime log volume with the scoped root initializer.",
+        )
+    ]
+    for name in ("log-init", *OPEN5GS_NFS):
+        service = nested(compose, "services", name) or {}
+        mount = mount_at(service, LOG_TARGET)
+        ok = mount.get("type") == "volume" and mount.get("source") == LOG_VOLUME
+        ok = ok and not mount.get("read_only", False)
+        if name != "log-init":
+            ok = (
+                ok
+                and nested(service, "depends_on", "log-init", "condition")
+                == "service_completed_successfully"
+            )
+        if name not in {"log-init", "upf"}:
+            ok = ok and service.get("user") == "999:999"
+        checks.append(
+            check(
+                f"{name}_runtime_logs",
+                ok,
+                "Use initialized named logs; non-UPF NFs remain UID/GID 999.",
+            )
+        )
+    return checks
+
+
+def validate_upf_bootstrap_contract(upf: dict[str, Any]) -> list[Check]:
+    sysctls = upf.get("sysctls", {})
+    environment = compose_environment(upf.get("environment"))
+    return [
+        check(
+            "upf_bootstrap_entrypoint",
+            upf.get("entrypoint") == UPF_ENTRYPOINT
+            and readonly_script(upf, UPF_ENTRYPOINT[1], "upf-entrypoint.sh"),
+            "Use the mounted UPF bootstrap that verifies Docker sysctls instead of writing them.",
+        ),
+        check(
+            "upf_bootstrap_sysctls",
+            isinstance(sysctls, dict)
+            and all(
+                str(sysctls.get(key)) == value
+                for key, value in {
+                    "net.ipv4.ip_forward": "1",
+                    "net.ipv6.conf.all.disable_ipv6": "0",
+                    "net.ipv6.conf.default.disable_ipv6": "0",
+                }.items()
+            ),
+            "Compose must configure IPv4 forwarding and enable IPv6 before UPF bootstrap.",
+        ),
+        check(
+            "upf_bootstrap_environment",
+            all(
+                environment.get(key)
+                for key in ("IPV4_TUN_ADDR", "IPV4_TUN_SUBNET", "IPV6_TUN_ADDR")
+            )
+            and environment.get("ENABLE_NAT") in {"true", "false"},
+            "Explicitly configure tunnel addresses, UE subnet, and NAT behavior.",
+        ),
+    ]
+
+
+def validate_upf_address_alignment(
+    compose: dict[str, Any], upf_config: dict[str, Any]
+) -> list[Check]:
+    environment = compose_environment(nested(compose, "services", "upf", "environment"))
+    session = list_first(nested(upf_config, "upf", "session"))
+    try:
+        subnet = ipaddress.IPv4Network(str(session.get("subnet")))
+        address = ipaddress.IPv4Interface(str(environment.get("IPV4_TUN_ADDR")))
+        ipaddress.IPv6Interface(str(environment.get("IPV6_TUN_ADDR")))
+        valid = address.network == subnet and str(address.ip) == str(session.get("gateway"))
+        valid = valid and str(environment.get("IPV4_TUN_SUBNET")) == str(subnet)
+    except ValueError:
+        valid = False
+    return [
+        check(
+            "upf_tunnel_address_alignment",
+            valid,
+            "UPF bootstrap IPv4 address/NAT subnet must match the configured UE gateway/pool; "
+            "IPv6 must be valid.",
+        )
+    ]
 
 
 def collect_static_ips(services: dict[str, Any]) -> list[str]:
@@ -333,9 +564,7 @@ def validate_open5gs_2_8_policy_and_slice_selection(
     return [
         check(
             "open5gs_2_8_pcf_required_mode",
-            "pcf" in services
-            and pcf_sbi_ip == pcf_ip
-            and pcf_db_uri == "mongodb://mongodb/open5gs",
+            "pcf" in services and pcf_sbi_ip == pcf_ip and pcf_db_uri == LAB_DB_URI,
             "Open5GS 2.8.0 PCF must be present, use the Compose SBI IP, and use lab MongoDB",
         ),
         check(
@@ -344,6 +573,104 @@ def validate_open5gs_2_8_policy_and_slice_selection(
             "NSSF is intentionally omitted only while SMF advertises the matching "
             "S-NSSAI/DNN to NRF",
         ),
+    ]
+
+
+def validate_open5gs_startup_contract(
+    compose: dict[str, Any],
+    amf: dict[str, Any],
+    pcf: dict[str, Any],
+    udr: dict[str, Any],
+) -> list[Check]:
+    """Validate pinned 2.8.0 startup inputs; runtime readiness is a separate check."""
+    timer = nested(amf, "amf", "time", "t3512", "value")
+    # v2.8.0 lib/nas/common/conv.c encodes GPRS Timer 3 in these units,
+    # with a five-bit value. AMF additionally rejects an absent/zero timer.
+    timer_units = (2, 30, 60, 600, 3600, 36000, 1152000)
+    timer_ok = (
+        isinstance(timer, int)
+        and not isinstance(timer, bool)
+        and any(
+            timer % unit == 0 and 1 <= timer // unit <= GPRS_TIMER_3_MAX_VALUE
+            for unit in timer_units
+        )
+    )
+    checks = [
+        check(
+            "open5gs_2_8_amf_t3512",
+            timer_ok,
+            "AMF requires a positive integer amf.time.t3512.value in seconds that "
+            "Open5GS 2.8.0 can encode as GPRS Timer 3 (upstream default: 540).",
+        )
+    ]
+    for name, config in (("pcf", pcf), ("udr", udr)):
+        environment = compose_environment(nested(compose, "services", name, "environment"))
+        checks.extend(
+            [
+                check(
+                    f"open5gs_2_8_{name}_db_uri",
+                    config.get("db_uri") == LAB_DB_URI
+                    and "db_uri" not in (nested(config, name) or {}),
+                    f"{name.upper()} requires root-level db_uri={LAB_DB_URI}; "
+                    f"{name}.db_uri is not a supported key.",
+                ),
+                check(
+                    f"open5gs_2_8_{name}_db_environment",
+                    environment.get("DB_URI") == LAB_DB_URI,
+                    f"Compose {name}.environment.DB_URI must explicitly target lab MongoDB; "
+                    "Open5GS gives DB_URI precedence over YAML and the pinned image "
+                    "inherits mongodb://mongo/open5gs.",
+                ),
+            ]
+        )
+    return checks
+
+
+def validate_ueransim_ue_startup_contract(ue: dict[str, Any]) -> list[Check]:
+    """Check the v3.3.0 parser fields exposed by the Linux startup failure."""
+    public_key = ue.get("homeNetworkPublicKey")
+    public_key_ok = "homeNetworkPublicKey" not in ue or (
+        isinstance(public_key, str) and re.fullmatch(r"[0-9a-fA-F]{64}", public_key) is not None
+    )
+    return [
+        check(
+            "ueransim_3_3_home_network_public_key",
+            public_key_ok,
+            "UERANSIM 3.3.0 requires exactly 64 hexadecimal homeNetworkPublicKey "
+            "characters when present, including with protectionScheme=0.",
+        ),
+        check(
+            "ueransim_3_3_integrity_max_rate",
+            all(
+                nested(ue, "integrityMaxRate", direction) in ("full", "64kbps")
+                for direction in ("uplink", "downlink")
+            ),
+            "UERANSIM 3.3.0 requires integrityMaxRate.uplink and .downlink; "
+            "each must be full or 64kbps.",
+        ),
+    ]
+
+
+def validate_bsf_contract(compose: dict[str, Any], bsf: dict[str, Any]) -> list[Check]:
+    service = nested(compose, "services", "bsf") or {}
+    mount = mount_at(service, "/opt/open5gs/etc/open5gs/bsf.yaml")
+    server = list_first(nested(bsf, "bsf", "sbi", "server"))
+    nrf = list_first(nested(bsf, "bsf", "sbi", "client", "nrf"))
+    return [
+        check(
+            "open5gs_2_8_pcf_bsf_binding_service",
+            service.get("command") == ["open5gs-bsfd", "-c", "/opt/open5gs/etc/open5gs/bsf.yaml"]
+            and mount.get("type") == "bind"
+            and mount.get("read_only") is True
+            and str(mount.get("source", "")).endswith("/configs/open5gs/bsf.yaml")
+            and server.get("address") == service_ip(compose, "bsf")
+            and server.get("port") == LAB_SBI_PORT
+            and nrf.get("uri") == f"http://{service_ip(compose, 'nrf')}:{LAB_SBI_PORT}"
+            and nested(compose, "services", "pcf", "depends_on", "bsf", "condition")
+            == "service_started",
+            "Open5GS 2.8 PCF requires BSF for SM-policy binding registration; "
+            "BSF must expose its Compose SBI address and register with lab NRF.",
+        )
     ]
 
 

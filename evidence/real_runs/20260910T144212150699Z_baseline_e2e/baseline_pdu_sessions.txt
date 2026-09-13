@@ -1,0 +1,16 @@
+command: docker compose exec -T ue nr-cli imsi-001010000000001 --exec ps-list
+returncode: 0
+stdout:
+PDU Session1:
+ state: PS-ACTIVE
+ session-type: IPv4
+ apn: internet
+ s-nssai:
+  sst: 0x01
+  sd: 0x000001
+ emergency: false
+ address: 10.45.1.3
+ ambr: up[1000000Kb/s] down[1000000Kb/s]
+ data-pending: false
+
+stderr:

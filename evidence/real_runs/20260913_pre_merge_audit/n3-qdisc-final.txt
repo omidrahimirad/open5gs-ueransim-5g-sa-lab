@@ -1,0 +1,2 @@
+returncode: 0
+qdisc noqueue 0: root refcnt 2
