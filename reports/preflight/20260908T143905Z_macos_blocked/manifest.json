@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "attempt_id": "20260908T143905Z_macos_blocked",
+  "attempt_type": "blocked_host_preflight",
+  "attempt_started_at_utc": "2026-09-08T14:39:13.837945+00:00",
+  "main_commit_sha": "d4227a44e68457e5e6ad510dbd9e9896728aeb8f",
+  "branch": "feat/runtime-validation-evidence",
+  "working_tree_at_first_attempt": "Clean checkout of latest main; no code or config changes.",
+  "readme_claim_unchanged": "STATIC + FIXTURE VALIDATED / REAL LINUX RUNTIME PENDING",
+  "runtime_executed": false,
+  "linux_runtime_validated": false,
+  "runtime_environment": null,
+  "attempt_environment": {
+    "os": "macOS 27.0 (26A5425a)",
+    "kernel": "Darwin 27.0.0",
+    "architecture": "arm64",
+    "docker_client_version": "29.4.3",
+    "docker_context": "desktop-linux",
+    "docker_server_version": null,
+    "docker_server_status": "UNREACHABLE: Docker Desktop socket missing",
+    "compose_version": "v5.1.4",
+    "shell_python_version": "3.12.10",
+    "project_python_version": "3.11.15",
+    "uv_version": "0.11.16",
+    "hostname": "<host>"
+  },
+  "capabilities": {
+    "linux_os": "FAIL: Darwin host",
+    "docker_engine": "FAIL: daemon unreachable",
+    "compose_cli": "PASS",
+    "tun_device": "FAIL: /dev/net/tun missing",
+    "sctp": "FAIL: Linux runtime unavailable",
+    "iproute2": "FAIL: ip not found",
+    "tc": "UNAVAILABLE",
+    "net_admin_container_permission": "NOT_VERIFIED",
+    "ueransim_tun_privileges": "NOT_VERIFIED",
+    "docker_bridge_networking": "NOT_VERIFIED",
+    "linux_ip_forwarding": "UNAVAILABLE"
+  },
+  "preflight": {
+    "command": "make preflight",
+    "exit_code": 2,
+    "status": "FAIL",
+    "failure_class": "ENVIRONMENT",
+    "output_record": "commands.json#/records/preflight"
+  },
+  "static_checks": {
+    "sync": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/sync"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/ruff"
+    },
+    "format": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/format"
+    },
+    "mypy": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/mypy"
+    },
+    "pytest": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/pytest"
+    },
+    "pre-commit": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/pre-commit"
+    },
+    "compose-config": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/compose-config"
+    },
+    "validate-config": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/validate-config"
+    },
+    "make-check": {
+      "exit_code": 0,
+      "status": "PASS",
+      "output_record": "commands.json#/records/make-check"
+    }
+  },
+  "tests": {
+    "collected": 63,
+    "non_runtime_passed": 62,
+    "runtime_deselected": 1,
+    "coverage_percent_rounded": 79,
+    "coverage_scope": "src/fiveg_lab and scripts, static/fixture tests only"
+  },
+  "compose_resolved_image_tags_all_profiles": [
+    "busybox:1.37.0",
+    "gradiant/open5gs-dbctl:0.10.3",
+    "gradiant/open5gs:2.8.0",
+    "gradiant/ueransim:3.3.0",
+    "mongo:8.3.8-noble"
+  ],
+  "images_pulled_or_executed_in_this_attempt": false,
+  "runtime_image_digests": null,
+  "configuration_sha256": {
+    "docker-compose.yml": "24996df262792ab96442bec1a2000978b13e7cbe76cadf5a173e8950fa6eba86",
+    "configs/open5gs/amf.yaml": "9b5e766b5b32a71a1bb52aca8ec224c5d228fe2165d20971dc107cd5012ad993",
+    "configs/open5gs/ausf.yaml": "1c1aecf935289befbad0c14508020c4dba4de6f4fd96bcc6ba03b8bcee2d5f82",
+    "configs/open5gs/nrf.yaml": "f6c27aa9a1fb4882a62a83e0f68b084f9904306860b347b37828d1a4b98d6af1",
+    "configs/open5gs/pcf.yaml": "335d5a9015102c56b5feb6fdf4b461e32eeedb9691fc3c7896a6aaaf78d4cf1a",
+    "configs/open5gs/smf.yaml": "d8c183cfa56f4c6cc6dc8d7a768dc158c0c7320722a494fc5742b6167b442920",
+    "configs/open5gs/udm.yaml": "8c8ef2c54c86cf68be2f9ccc6d468bfa88e1e2531d9d0a0a235258b1c19c5fab",
+    "configs/open5gs/udr.yaml": "eea377f24165256c583ec7c167f1ba137b4b834924d622a83f98cf1d17842598",
+    "configs/open5gs/upf.yaml": "d87758534218ab584b693bdfa044e12cbc9ba1b2c246a4baac02830c9da547f9",
+    "configs/subscriber_config.yaml": "57c7ba52e947682ad65d814ecec84a8e0860f3905b4444cbc4d638dc7bd1dc4d",
+    "configs/ueransim/gnb.yaml": "7b55b860b7dd721d1a5982ac3c3ab6eac3a7b9e571444a6cdfecd86e9aeae515",
+    "configs/ueransim/ue.yaml": "a26fc0c6cdcf7ffe756a3dc34959af38496a0b16ebcd4b67572f40821c72dadf",
+    "scenarios/amf_restart.yaml": "a1569458795530c37d242d71bf0dc488ea762ebd0a5e1a067cb56b1f7ec561b7",
+    "scenarios/baseline_e2e.yaml": "1a86ac344fb3a5a6f22b93a6e32f8ee933739a4559ec1d9ff95c5a1cb9a5bf9d",
+    "scenarios/dnn_mismatch.yaml": "61295a29b4c8bbdd693a29116756cff0d17435295a9d3cde1819541e2862cd47",
+    "scenarios/invalid_subscriber_key.yaml": "8ab59efc107c76347b8c88a0f6d1cce0af17290123e05a918ea11a99c2786052",
+    "scenarios/n2_impairment.yaml": "8438dcb036372b168d453b08e8cc6b867a1722f052e0f5c32abd6af6ac9754ed",
+    "scenarios/n3_impairment.yaml": "a607afe46dcc009661871e15d004acc4ce797613a6bd3360bb4198f5161abebc",
+    "scenarios/smf_unavailable.yaml": "f53c399531e7b5aac398bb886819077c99373010af7624a36086ffe104877157",
+    "scenarios/snssai_mismatch.yaml": "98d201b7cb11cd1ee395ee1c157ab4ef66a2592ef01322d216511a6901a100bf",
+    "scenarios/unknown_subscriber.yaml": "cb948fba8e8f2bb254869bf03fbe1d49920f4553d75b58c78d734522c70de9d1",
+    "scenarios/upf_unavailable.yaml": "b39dc5be010b99cd733900726d29210cae2bf367c23c6eceabf2000971d4294f"
+  },
+  "evidence_folder_at_main": [
+    "evidence/.gitkeep",
+    "evidence/README.md"
+  ],
+  "readme_scenario_matrix_at_main": [
+    "| `baseline_e2e` | Healthy baseline | Accept | Accept | DN traffic succeeds through UE tunnel | N/A | No |",
+    "| `invalid_subscriber_key` | Authentication | Reject/fail | Not established | Unavailable | Restore key/OPc and baseline | No |",
+    "| `unknown_subscriber` | Subscriber | Reject/fail | Not established | Unavailable | Restore SUPI/DB record and baseline | No |",
+    "| `dnn_mismatch` | Session management | May accept | Reject/fail | Unavailable | Restore DNN and baseline | No |",
+    "| `snssai_mismatch` | Session management | Evidence-dependent | Reject/fail expected, must be proven | Unavailable | Restore S-NSSAI and baseline | No |",
+    "| `amf_restart` | Control plane | Impact/recovery observed | Rechecked after recovery | Rechecked after recovery | AMF restart plus baseline | No |",
+    "| `smf_unavailable` | Session management | May remain available | Reject/fail | Unavailable | Start SMF and baseline | No |",
+    "| `upf_unavailable` | User plane | May remain available | PFCP/session impact possible | Fails | Start UPF and baseline | No |",
+    "| `n2_impairment` | Transport | NGAP/SCTP impact observed | Interpreted after CP state | Interpreted after CP state | Remove scoped impairment and baseline | No |",
+    "| `n3_impairment` | Transport | May remain healthy | May remain established | Degrades/fails | Remove scoped impairment and baseline | No |"
+  ],
+  "scenario_counts": {
+    "planned": 10,
+    "executed": 0,
+    "passed": 0,
+    "failed": 0,
+    "blocked_before_execution": 10
+  },
+  "scenarios": [
+    {
+      "id": "amf_restart",
+      "file": "scenarios/amf_restart.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": null
+    },
+    {
+      "id": "baseline_e2e",
+      "file": "scenarios/baseline_e2e.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": null
+    },
+    {
+      "id": "dnn_mismatch",
+      "file": "scenarios/dnn_mismatch.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": "Transactional config/subscriber runtime mutation is not automated in the merged implementation."
+    },
+    {
+      "id": "invalid_subscriber_key",
+      "file": "scenarios/invalid_subscriber_key.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": "Transactional config/subscriber runtime mutation is not automated in the merged implementation."
+    },
+    {
+      "id": "n2_impairment",
+      "file": "scenarios/n2_impairment.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": null
+    },
+    {
+      "id": "n3_impairment",
+      "file": "scenarios/n3_impairment.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": null
+    },
+    {
+      "id": "smf_unavailable",
+      "file": "scenarios/smf_unavailable.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": null
+    },
+    {
+      "id": "snssai_mismatch",
+      "file": "scenarios/snssai_mismatch.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": "Transactional config/subscriber runtime mutation is not automated in the merged implementation."
+    },
+    {
+      "id": "unknown_subscriber",
+      "file": "scenarios/unknown_subscriber.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": "Transactional config/subscriber runtime mutation is not automated in the merged implementation."
+    },
+    {
+      "id": "upf_unavailable",
+      "file": "scenarios/upf_unavailable.yaml",
+      "declared_runtime_validated": false,
+      "executed": false,
+      "attempt_status": "BLOCKED",
+      "reason": "Host preflight failed before any scenario execution.",
+      "observed_impact": null,
+      "recovery": "NOT_EXECUTED",
+      "runtime_evidence_path": null,
+      "additional_implementation_blocker": null
+    }
+  ],
+  "real_protocol_evidence": {
+    "N2": null,
+    "N3": null,
+    "N4": null,
+    "SBI": null
+  },
+  "real_timing_metrics": null,
+  "runtime_defects_discovered": [],
+  "runtime_fixes_applied": [],
+  "cleanup": "No runtime actions, lab containers, fault rules, or subscriber/config mutations were performed by this attempt; no runtime cleanup was invoked.",
+  "fresh_clone_runtime_reproduction": "NOT_EXECUTED",
+  "completion_verdict": "PROJECT NOT YET COMPLETE",
+  "remaining_blocking_step": "Provide access to a suitable Ubuntu/Linux host that passes the complete runtime prerequisites, so the requested baseline-first validation can execute."
+}
